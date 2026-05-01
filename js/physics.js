@@ -62,7 +62,7 @@ export const TUNING = {
   // Higher angular damping kills the slow yaw drift that arcade chassis
   // rigid bodies pick up at rest. Drop this if the car feels too stable
   // mid-corner; raise it if it twitches when stationary.
-  angularDamping: 2.5,
+  angularDamping: 1.5,
   // Spawn slightly above ground; the car settles on its collider.
   spawnHeight: 0.5,
 
@@ -95,7 +95,7 @@ export const TUNING = {
   steerInputRate: 3.0,
   // N·m per rad of steer × speed-normalised yaw factor. The single biggest
   // knob for "how much does the car rotate when I press A/D".
-  yawTorqueGain: 7000,
+  yawTorqueGain: 11000,
   // Minimum yaw factor at standstill. Real cars need motion to rotate the
   // body, but for arcade forgiveness we let the player nudge the heading
   // a little even when stopped.
@@ -203,10 +203,16 @@ export function createVehicle(world, position = { x: 0, y: TUNING.spawnHeight, z
   body.setEnabledRotations(false, true, false, true);
 
   const [hx, hy, hz] = TUNING.chassisHalfExtents;
+  // Friction is INTENTIONALLY zero. The chassis is a cuboid sliding face-on-
+  // face on the ground; non-zero Coulomb friction here oscillates as Rapier's
+  // contact solver iterates, producing the accel/decel "burst" pattern under
+  // throttle. All longitudinal resistance comes from `dragCoefficient` and
+  // all lateral grip from our axle impulses — Rapier just integrates and
+  // keeps the body above the ground.
   const colliderDesc = RAPIER.ColliderDesc.cuboid(hx, hy, hz)
     .setDensity(TUNING.chassisMass / (8 * hx * hy * hz))
-    .setFriction(0.6)
-    .setRestitution(0.05);
+    .setFriction(0.0)
+    .setRestitution(0.0);
   world.createCollider(colliderDesc, body);
 
   return {
@@ -402,6 +408,15 @@ export function stepVehicle(world, vehicle, input, dt) {
 
   // 9) Step.
   world.step();
+
+  // 9.5) Defensive yaw-only enforcement. setEnabledRotations(false,true,false)
+  //      should already prevent X/Z rotation, but if Rapier's solver leaks any
+  //      angular velocity into those axes (numerical, or API differences across
+  //      versions), we zero it here so the chassis can never roll or pitch.
+  const angvelOut = body.angvel();
+  if (angvelOut.x !== 0 || angvelOut.z !== 0) {
+    body.setAngvel({ x: 0, y: angvelOut.y, z: 0 }, true);
+  }
 
   // 10) Post-step snapshot + debug derived state.
   const t1 = body.translation();
