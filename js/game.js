@@ -28,7 +28,9 @@ const _carQuat      = new THREE.Quaternion();
 const _carVel       = new THREE.Vector3();
 const _localOffset  = new THREE.Vector3();
 const _forward      = new THREE.Vector3();
+const _yawQuat      = new THREE.Quaternion();
 const _F            = new THREE.Vector3(0, 0, -1);
+const _UP           = new THREE.Vector3(0, 1, 0);
 
 let cameraInitialized = false;
 
@@ -96,15 +98,22 @@ function updateChaseCamera(camera, vehicle, mesh, dt) {
   _carVel.set(lv.x, lv.y, lv.z);
   const speed = _carVel.length();
 
-  // --- target camera position: body-local offset rotated into world ---
-  _localOffset.fromArray(TUNING.camPosOffset).applyQuaternion(_carQuat);
+  // Build a yaw-only quaternion from the chassis heading. Even though the
+  // physics body is now constrained to Y-axis rotation, we keep the camera
+  // strictly yaw-driven as defense in depth — a tilted camera makes the
+  // world appear to spin (the "W turns the car" symptom from earlier).
+  _forward.copy(_F).applyQuaternion(_carQuat);
+  const yaw = Math.atan2(_forward.x, _forward.z);  // 0 when forward = -Z
+  _yawQuat.setFromAxisAngle(_UP, yaw + Math.PI);    // +π because forward is -Z
+
+  // --- target camera position: body-local offset rotated by YAW ONLY ---
+  _localOffset.fromArray(TUNING.camPosOffset).applyQuaternion(_yawQuat);
   _camTargetPos.copy(_carPos).add(_localOffset);
 
   // --- target look-at: ahead along velocity (fall back to heading if stopped) ---
   if (speed > 1) {
     _camTargetLook.copy(_carVel).normalize().multiplyScalar(TUNING.camLookAheadDist);
   } else {
-    _forward.copy(_F).applyQuaternion(_carQuat);
     _camTargetLook.copy(_forward).multiplyScalar(TUNING.camLookAheadDist);
   }
   _camTargetLook.add(_carPos);

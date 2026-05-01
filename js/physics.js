@@ -62,7 +62,7 @@ export const TUNING = {
   // Higher angular damping kills the slow yaw drift that arcade chassis
   // rigid bodies pick up at rest. Drop this if the car feels too stable
   // mid-corner; raise it if it twitches when stationary.
-  angularDamping: 1.5,
+  angularDamping: 2.5,
   // Spawn slightly above ground; the car settles on its collider.
   spawnHeight: 0.5,
 
@@ -86,16 +86,16 @@ export const TUNING = {
   // Maximum steer angle (radians) at standstill vs at top speed. We lerp by
   // a normalised speed fraction. Bigger lowSpeed = sharper city feel; bigger
   // highSpeed = darty at top speed (tends to feel arcadey but unstable).
-  maxSteerLow:  32 * Math.PI / 180,
+  maxSteerLow:  22 * Math.PI / 180,
   maxSteerHigh:  8 * Math.PI / 180,
   // How fast the smoothed steer input chases the player's intent (rad/s).
   // This is INPUT smoothing only — it stops binary keyboard input from
   // producing instantaneous full-lock yaw torque. Lower = soggier, higher
   // = twitchier.
-  steerInputRate: 5.0,
+  steerInputRate: 3.0,
   // N·m per rad of steer × speed-normalised yaw factor. The single biggest
   // knob for "how much does the car rotate when I press A/D".
-  yawTorqueGain: 12000,
+  yawTorqueGain: 7000,
   // Minimum yaw factor at standstill. Real cars need motion to rotate the
   // body, but for arcade forgiveness we let the player nudge the heading
   // a little even when stopped.
@@ -107,8 +107,10 @@ export const TUNING = {
   // FRONT > REAR by design — that's how the car turns in. If you bump
   // frontLatGrip well above rearLatGrip you'll get a darty, oversteery feel;
   // if you flip them the car understeers like a road car.
-  frontLatGrip: 18,
-  rearLatGrip:  16,
+  // (Equal here while we settle the steering feel; nudge front up by 1–2
+  // once the chassis isn't oversteering from yaw torque alone.)
+  frontLatGrip: 14,
+  rearLatGrip:  14,
   // Axle offsets along chassis-local Z. Negative Z = forward, so the front
   // axle is at -1.5 and the rear axle is at +1.5. Wheelbase = 3.0 m, which
   // matches the visual mesh in vehicle.js. Keep in sync.
@@ -193,6 +195,12 @@ export function createVehicle(world, position = { x: 0, y: TUNING.spawnHeight, z
     // CCD prevents the chassis tunneling through ground at high speed.
     .setCcdEnabled(true);
   const body = world.createRigidBody(bodyDesc);
+
+  // Lock the chassis to yaw (Y) only. Without this, tiny numerical roll/pitch
+  // drift makes the chase camera (which inherits the chassis quaternion) tilt
+  // and produces a "W turns the car" illusion. PolyTrack-style arcade always
+  // constrains the body to yaw — we'll revisit if a future track needs banking.
+  body.setEnabledRotations(false, true, false, true);
 
   const [hx, hy, hz] = TUNING.chassisHalfExtents;
   const colliderDesc = RAPIER.ColliderDesc.cuboid(hx, hy, hz)
