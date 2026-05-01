@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PolePosition — Phase 1</title>
+  <link rel="stylesheet" href="./css/style.css">
+
+  <!--
+    Module resolution for the no-build-step setup.
+    Both libs are pulled fresh from esm.sh at runtime; rapier3d-compat ships
+    with its WASM bundled inline, so it works without a separate .wasm fetch.
+  -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://esm.sh/three@0.160.0",
+        "rapier": "https://esm.sh/@dimforge/rapier3d-compat@0.14.2"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="game-canvas"></canvas>
+
+  <div id="hud">
+    <div id="speed-row">
+      <span id="speed">0</span><span class="unit">km/h</span>
+    </div>
+    <div id="hud-meta">
+      <div><span class="label">Gear</span> <span id="gear">—</span></div>
+      <div><span class="label">FPS</span> <span id="fps">0</span></div>
+      <div><span class="label">Slip</span> <span id="slip">0°</span></div>
+    </div>
+    <div id="hud-help">
+      WASD / Arrows · R reset · Phase 1 prototype
+    </div>
+  </div>
+
+  <div id="loading">
+    <div>Loading PolePosition…</div>
+    <div id="loading-detail">initialising physics</div>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
