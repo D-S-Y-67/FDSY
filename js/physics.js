@@ -86,8 +86,8 @@ export const TUNING = {
   // Maximum steer angle (radians) at standstill vs at top speed. We lerp by
   // a normalised speed fraction. Bigger lowSpeed = sharper city feel; bigger
   // highSpeed = darty at top speed (tends to feel arcadey but unstable).
-  maxSteerLow:  22 * Math.PI / 180,
-  maxSteerHigh:  8 * Math.PI / 180,
+  maxSteerLow:  28 * Math.PI / 180,
+  maxSteerHigh:  9 * Math.PI / 180,
   // How fast the smoothed steer input chases the player's intent (rad/s).
   // This is INPUT smoothing only — it stops binary keyboard input from
   // producing instantaneous full-lock yaw torque. Lower = soggier, higher
@@ -95,7 +95,10 @@ export const TUNING = {
   steerInputRate: 3.0,
   // N·m per rad of steer × speed-normalised yaw factor. The single biggest
   // knob for "how much does the car rotate when I press A/D".
-  yawTorqueGain: 11000,
+  // Kept moderate so most of the cornering motion comes from the grip
+  // imbalance (front > rear), not raw yaw torque — that's what makes the
+  // car "carve" instead of "pivot".
+  yawTorqueGain: 7500,
   // Minimum yaw factor at standstill. Real cars need motion to rotate the
   // body, but for arcade forgiveness we let the player nudge the heading
   // a little even when stopped.
@@ -104,13 +107,15 @@ export const TUNING = {
   // --- grip (the most important feel knobs) ---
   // Lateral grip in m/s² of deceleration applied per m/s of lateral velocity
   // at each axle. Modeled as: lateralImpulse = mass/2 × grip × lateralVel × dt.
-  // FRONT > REAR by design — that's how the car turns in. If you bump
-  // frontLatGrip well above rearLatGrip you'll get a darty, oversteery feel;
-  // if you flip them the car understeers like a road car.
-  // (Equal here while we settle the steering feel; nudge front up by 1–2
-  // once the chassis isn't oversteering from yaw torque alone.)
-  frontLatGrip: 14,
-  rearLatGrip:  14,
+  // FRONT > REAR by design — that's how the car turns in. The cornering
+  // force comes from the lateral grip impulses converting "the chassis is
+  // pointing somewhere different from where it's moving" (slip angle) into
+  // a velocity-direction change. Higher front grip relative to rear means
+  // the front end "bites" first, rotating the chassis into the corner; the
+  // rear catches up via its own (lower) grip, producing a natural arcing
+  // motion rather than a pivot-on-the-spot yaw.
+  frontLatGrip: 18,
+  rearLatGrip:  15,
   // Axle offsets along chassis-local Z. Negative Z = forward, so the front
   // axle is at -1.5 and the rear axle is at +1.5. Wheelbase = 3.0 m, which
   // matches the visual mesh in vehicle.js. Keep in sync.

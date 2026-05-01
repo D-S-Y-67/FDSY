@@ -51,12 +51,16 @@ export function startLoop({ scene, camera, renderer, world, vehicle, mesh }) {
     lastTime = now;
     if (frameDt > MAX_FRAME_DT) frameDt = MAX_FRAME_DT;
 
+    // Read input once per render frame; physics gets the same struct on
+    // every sub-step within that frame so behaviour stays deterministic
+    // regardless of how many physics steps happen between renders.
+    const input = readInput();
+    if (input.reset) resetVehicle(vehicle);
+
     // --- physics: fixed-timestep accumulator ---
     accumulator += frameDt;
     let physicsSteps = 0;
     while (accumulator >= FIXED_DT) {
-      const input = readInput();
-      if (input.reset) resetVehicle(vehicle);
       stepVehicle(world, vehicle, input, FIXED_DT);
       accumulator -= FIXED_DT;
       // Safety: don't spiral the simulation if a long pause happened.
@@ -70,7 +74,7 @@ export function startLoop({ scene, camera, renderer, world, vehicle, mesh }) {
     // --- chase camera ---
     updateChaseCamera(camera, vehicle, mesh, frameDt);
 
-    updateHud(vehicle, frameDt);
+    updateHud(vehicle, input, frameDt);
     renderer.render(scene, camera);
   }
 

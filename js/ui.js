@@ -8,6 +8,11 @@ const el = (id) => document.getElementById(id);
 const $speed = el("speed");
 const $fps   = el("fps");
 const $slip  = el("slip");
+const $keyW  = el("key-w");
+const $keyA  = el("key-a");
+const $keyS  = el("key-s");
+const $keyD  = el("key-d");
+const $steerVal = el("steer-val");
 const $loading = el("loading");
 const $loadingDetail = el("loading-detail");
 
@@ -29,10 +34,11 @@ export function hideLoading() {
 
 /**
  * Update the HUD.
- * @param {{ speedKmh: number, slipAngleDeg: number }} vehicle
+ * @param {{ speedKmh: number, slipAngleDeg: number, smoothedSteer: number }} vehicle
+ * @param {{ throttle:number, brake:number, steer:number }} input
  * @param {number} frameDtSec  - render-frame delta seconds (not the physics dt)
  */
-export function updateHud(vehicle, frameDtSec) {
+export function updateHud(vehicle, input, frameDtSec) {
   $speed.textContent = Math.max(0, Math.round(vehicle.speedKmh)).toString();
 
   // rolling-window FPS average
@@ -45,4 +51,11 @@ export function updateHud(vehicle, frameDtSec) {
   $fps.textContent = Math.round(sum / fpsSamples.length).toString();
 
   $slip.textContent = `${Math.round(vehicle.slipAngleDeg)}°`;
+
+  // Input debug — lights up the key chip when its control is active.
+  $keyW.classList.toggle("active", input.throttle > 0);
+  $keyS.classList.toggle("active", input.brake    > 0);
+  $keyA.classList.toggle("active", input.steer    < 0);
+  $keyD.classList.toggle("active", input.steer    > 0);
+  $steerVal.textContent = vehicle.smoothedSteer.toFixed(2);
 }

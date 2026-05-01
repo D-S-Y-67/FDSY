@@ -84,8 +84,53 @@ html, body {
   font-variant-numeric: tabular-nums;
 }
 
-#hud-help {
+#hud-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 11px;
+  color: #889;
+}
+
+#hud-input .label {
+  margin-right: 4px;
+}
+
+#hud-input .key {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  text-align: center;
+  line-height: 18px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #556;
+  font-weight: 700;
+  font-size: 10px;
+  transition: background 0.04s, color 0.04s;
+}
+
+#hud-input .key.active {
+  background: #ff8000;
+  color: #0a0e16;
+}
+
+#hud-input .steer {
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+  color: #aab;
+}
+
+#hud-input .steer #steer-val {
+  color: #fff;
+  font-weight: 700;
+}
+
+#hud-help {
+  margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 11px;

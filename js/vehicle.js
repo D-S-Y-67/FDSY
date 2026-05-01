@@ -163,11 +163,12 @@ export function buildF1Mesh({ primary = DEFAULT_PRIMARY, accent = DEFAULT_ACCENT
   wheelGeo.rotateZ(Math.PI / 2);
 
   const wheels = [];
+  const frontWheels = [];
   const wheelPositions = [
-    { x: -0.85, y: -0.05, z: -1.5, name: "FL" },
-    { x:  0.85, y: -0.05, z: -1.5, name: "FR" },
-    { x: -0.85, y: -0.05, z:  1.5, name: "RL" },
-    { x:  0.85, y: -0.05, z:  1.5, name: "RR" },
+    { x: -0.85, y: -0.05, z: -1.5, name: "FL", front: true  },
+    { x:  0.85, y: -0.05, z: -1.5, name: "FR", front: true  },
+    { x: -0.85, y: -0.05, z:  1.5, name: "RL", front: false },
+    { x:  0.85, y: -0.05, z:  1.5, name: "RR", front: false },
   ];
   for (const p of wheelPositions) {
     const wheel = new THREE.Mesh(wheelGeo, tireMat);
@@ -187,16 +188,25 @@ export function buildF1Mesh({ primary = DEFAULT_PRIMARY, accent = DEFAULT_ACCENT
 
     car.add(wheel);
     wheels.push(wheel);
+    if (p.front) frontWheels.push(wheel);
   }
 
-  // Stash references on the group so future phases (steering visualisation,
-  // tire deg colour shifts) can grab them without re-traversing.
+  // Stash references on the group so future phases (tire deg colour shifts,
+  // wheel-spin once we track angular state, etc.) can grab them without
+  // re-traversing the scene tree. `frontWheels` is updated each frame by
+  // updateVehicleMesh() so the wheels visibly turn with the steering input.
   car.userData.wheels = wheels;
+  car.userData.frontWheels = frontWheels;
   car.userData.bodyMaterial = bodyMat;
   car.userData.accentMaterial = accentMat;
 
   return car;
 }
+
+// Visual steer angle for the front wheels (radians at full lock). Real F1
+// cars only steer ~14°, so even at smoothedSteer=±1 the wheels don't crank
+// to the chassis-yaw maxSteerLow value (which can be 28°).
+const VISUAL_STEER_LOCK = 16 * Math.PI / 180;
 
 // ---------------------------------------------------------------------------
 // Mesh sync — copies the interpolated physics transform onto the visual mesh.
@@ -218,6 +228,15 @@ export function updateVehicleMesh(mesh, vehicle, alpha) {
   _prevQuat.set(vehicle.prevRotation.x, vehicle.prevRotation.y, vehicle.prevRotation.z, vehicle.prevRotation.w);
   _tmpQuat.set(vehicle.currRotation.x, vehicle.currRotation.y, vehicle.currRotation.z, vehicle.currRotation.w);
   mesh.quaternion.slerpQuaternions(_prevQuat, _tmpQuat, alpha);
+
+  // Front-wheel steer visualisation. Sign is negated so positive steer
+  // (right) rotates the wheels clockwise viewed from above, matching the
+  // chassis yaw direction we apply in physics.
+  const steerVis = -vehicle.smoothedSteer * VISUAL_STEER_LOCK;
+  const fronts = mesh.userData.frontWheels;
+  if (fronts) {
+    for (const w of fronts) w.rotation.y = steerVis;
+  }
 }
 
 // ---------------------------------------------------------------------------
