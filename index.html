@@ -8,14 +8,15 @@
 
   <!--
     Module resolution for the no-build-step setup.
-    Both libs are pulled fresh from esm.sh at runtime; rapier3d-compat ships
-    with its WASM bundled inline, so it works without a separate .wasm fetch.
+    Pulled from jsdelivr (faster + more reliable than esm.sh for WASM-bundled
+    packages — esm.sh transforms on demand, jsdelivr serves as-is).
+    rapier3d-compat ships its WASM inline, so no separate .wasm fetch is needed.
   -->
   <script type="importmap">
     {
       "imports": {
-        "three": "https://esm.sh/three@0.160.0",
-        "rapier": "https://esm.sh/@dimforge/rapier3d-compat@0.14.2"
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "rapier": "https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat@0.14.2/rapier.es.js"
       }
     }
   </script>
