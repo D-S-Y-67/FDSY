@@ -114,8 +114,13 @@ function updateChaseCamera(camera, vehicle, mesh, dt) {
   _localOffset.fromArray(TUNING.camPosOffset).applyQuaternion(_yawQuat);
   _camTargetPos.copy(_carPos).add(_localOffset);
 
-  // --- target look-at: ahead along velocity (fall back to heading if stopped) ---
-  if (speed > 1) {
+  // --- target look-at ---
+  // Normally we look ahead along the velocity vector (gives the slight lead
+  // that "looks where you're going" feel). But when reversing, that would
+  // whip the camera around behind the car. So if the car is moving with
+  // negative forward-speed (= reversing), we look along the chassis heading
+  // instead — camera stays oriented along the nose, world scrolls past.
+  if (speed > 1 && vehicle.forwardSpeedSigned > 0) {
     _camTargetLook.copy(_carVel).normalize().multiplyScalar(TUNING.camLookAheadDist);
   } else {
     _camTargetLook.copy(_forward).multiplyScalar(TUNING.camLookAheadDist);

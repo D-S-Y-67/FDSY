@@ -60,6 +60,12 @@ html, body {
   color: #aab;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  transition: color 0.12s;
+}
+
+#speed-row .unit.reverse {
+  color: #ff4838;   /* hot red so reverse mode is unmistakable */
+  letter-spacing: 0.12em;
 }
 
 #hud-meta {

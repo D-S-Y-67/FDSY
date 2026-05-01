@@ -5,16 +5,22 @@
 // we wire a gearbox simulation in a later phase.
 
 const el = (id) => document.getElementById(id);
-const $speed = el("speed");
-const $fps   = el("fps");
-const $slip  = el("slip");
-const $keyW  = el("key-w");
-const $keyA  = el("key-a");
-const $keyS  = el("key-s");
-const $keyD  = el("key-d");
-const $steerVal = el("steer-val");
-const $loading = el("loading");
+const $speed     = el("speed");
+const $speedUnit = el("speed-unit");
+const $gear      = el("gear");
+const $fps       = el("fps");
+const $slip      = el("slip");
+const $keyW      = el("key-w");
+const $keyA      = el("key-a");
+const $keyS      = el("key-s");
+const $keyD      = el("key-d");
+const $steerVal  = el("steer-val");
+const $loading   = el("loading");
 const $loadingDetail = el("loading-detail");
+
+// Threshold (m/s) below which the car is considered "in neutral" for the
+// gear chip readout. Same scale as physics.js#TUNING.brakeReverseThreshold.
+const NEUTRAL_BAND = 0.3;
 
 // Rolling FPS averaging — 1/dt jitters too violently to read.
 const FPS_SAMPLE_WINDOW = 30;
@@ -34,12 +40,32 @@ export function hideLoading() {
 
 /**
  * Update the HUD.
- * @param {{ speedKmh: number, slipAngleDeg: number, smoothedSteer: number }} vehicle
+ * @param {{ speedKmh:number, forwardSpeedSigned:number,
+ *          slipAngleDeg:number, smoothedSteer:number }} vehicle
  * @param {{ throttle:number, brake:number, steer:number }} input
  * @param {number} frameDtSec  - render-frame delta seconds (not the physics dt)
  */
 export function updateHud(vehicle, input, frameDtSec) {
   $speed.textContent = Math.max(0, Math.round(vehicle.speedKmh)).toString();
+
+  // Direction-aware unit + gear readout. Reading vehicle.forwardSpeedSigned
+  // (m/s along chassis nose, signed) lets the HUD distinguish a stationary
+  // car from one slowly reversing — without this the speedometer reads "0"
+  // either way and the player thinks reverse is broken.
+  const fs = vehicle.forwardSpeedSigned;
+  if (fs < -NEUTRAL_BAND) {
+    $speedUnit.textContent = "km/h ◀ REV";
+    $speedUnit.classList.add("reverse");
+    $gear.textContent = "R";
+  } else if (fs > NEUTRAL_BAND) {
+    $speedUnit.textContent = "km/h";
+    $speedUnit.classList.remove("reverse");
+    $gear.textContent = "D";
+  } else {
+    $speedUnit.textContent = "km/h";
+    $speedUnit.classList.remove("reverse");
+    $gear.textContent = "N";
+  }
 
   // rolling-window FPS average
   const fps = frameDtSec > 0 ? 1 / frameDtSec : 0;

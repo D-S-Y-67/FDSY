@@ -72,11 +72,19 @@ export const TUNING = {
   // if the car feels twitchy on power. Real F1 traction limits are ignored
   // here on purpose (this is arcade).
   engineForce: 11000,
-  // Reverse force is intentionally weak — we don't want the car launching
-  // backward when the player taps S to slow down.
-  reverseForce: 5000,
+  // Reverse force. Applied along -forward when the player holds S below
+  // brakeReverseThreshold. Stronger than you might first guess — at 9000 N
+  // / 780 kg = 11.5 m/s² the car is visibly reversing within ~0.25 s, which
+  // is the snappiness players expect. Lower this if you want a slower
+  // crawling reverse.
+  reverseForce: 9000,
   // Brake force is roughly 2× engine for a satisfying stop.
   brakeForce: 22000,
+  // Speed (m/s) below which holding S switches from "brake" mode to
+  // "reverse acceleration" mode. Set deliberately low (0.3 m/s ≈ 1 km/h):
+  // once the speedometer rounds to 0, S should immediately start pushing
+  // backward instead of fighting a tiny residual forward velocity.
+  brakeReverseThreshold: 0.3,
   // Quadratic drag: dragForce = dragCoefficient × speed² (Newtons), opposite
   // velocity. This is the dominant top-speed cap. Lower → higher top speed.
   // 1.49 with engineForce 11000 puts terminal speed at ~309 km/h.
@@ -224,7 +232,8 @@ export function createVehicle(world, position = { x: 0, y: TUNING.spawnHeight, z
     body,
     spawn: { ...position },
     smoothedSteer: 0,           // tracks input.steer with rate-limited slewing
-    speedKmh: 0,
+    speedKmh: 0,                // |velocity|, always non-negative (HUD readout)
+    forwardSpeedSigned: 0,      // m/s along chassis forward (negative = reversing)
     slipAngleDeg: 0,
     // Render-interpolation snapshots (read by vehicle.js#updateVehicleMesh)
     prevTranslation: { x: position.x, y: position.y, z: position.z },
@@ -242,6 +251,7 @@ export function resetVehicle(vehicle) {
   vehicle.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
   vehicle.smoothedSteer = 0;
   vehicle.speedKmh = 0;
+  vehicle.forwardSpeedSigned = 0;
   vehicle.slipAngleDeg = 0;
   // Refresh interpolation snapshots so the mesh doesn't tween across the
   // teleport (which would flash a long streak between old and new pose).
@@ -325,7 +335,10 @@ export function stepVehicle(world, vehicle, input, dt) {
     longForce += TUNING.engineForce * input.throttle;
   }
   if (input.brake > 0) {
-    if (forwardSpeed > 1) {
+    // Two modes — true brake when the car has meaningful forward velocity,
+    // reverse acceleration once it's stopped or already moving backward.
+    // The threshold lives in TUNING so the player can tune the transition.
+    if (forwardSpeed > TUNING.brakeReverseThreshold) {
       longForce -= TUNING.brakeForce * input.brake;
     } else {
       longForce -= TUNING.reverseForce * input.brake;
@@ -439,11 +452,19 @@ export function stepVehicle(world, vehicle, input, dt) {
   const speed1 = Math.sqrt(lv1.x * lv1.x + lv1.y * lv1.y + lv1.z * lv1.z);
   vehicle.speedKmh = speed1 * 3.6;
 
+  // Signed forward speed — positive = forward, negative = reversing. Used by
+  // the HUD to flip the unit label to "REV" and by the camera to keep its
+  // look-at oriented along the car's nose when reversing (instead of
+  // following the velocity vector backward).
+  _q.set(r1.x, r1.y, r1.z, r1.w);
+  _forward.copy(_F_FORWARD).applyQuaternion(_q);
+  vehicle.forwardSpeedSigned =
+    lv1.x * _forward.x + lv1.y * _forward.y + lv1.z * _forward.z;
+
   // Slip angle: angle between forward and velocity, signed. Positive = car
   // is sliding to the right of where it's pointed (typical drifting reading).
+  // _q and _forward were already set above for forwardSpeedSigned — reuse.
   if (speed1 > 1) {
-    _q.set(r1.x, r1.y, r1.z, r1.w);
-    _forward.copy(_F_FORWARD).applyQuaternion(_q);
     const fwdDotV = (_forward.x * lv1.x + _forward.y * lv1.y + _forward.z * lv1.z) / speed1;
     const ang = Math.acos(Math.max(-1, Math.min(1, fwdDotV)));
     // Cross-product Y component gives the sign.
