@@ -87,7 +87,10 @@ enum SceneBuilder {
         }
 
         // --- Car ------------------------------------------------------
-        let (chassis, wheels) = F1Car.build(at: vec3(0, 0.6, 0), tuning: tuning)
+        // Spawn well above the ground so the suspension visibly settles
+        // and we can be sure the wheels are making contact (rather than
+        // floating in mid-air or clipping through).
+        let (chassis, wheels) = F1Car.build(at: vec3(0, 1.5, 0), tuning: tuning)
         scene.rootNode.addChildNode(chassis)
         let vehicle = VehiclePhysics(chassisNode: chassis, wheelNodes: wheels, tuning: tuning)
         vehicle.attach(to: scene.physicsWorld)

@@ -16,6 +16,7 @@ final class GameLoopController: NSObject, SCNSceneRendererDelegate {
 
     private var lastTime: TimeInterval = 0
     private var lastTelemetryPush: TimeInterval = 0
+    private var lastDebugLog: TimeInterval = 0
 
     /// HUD doesn't need 60 Hz; 10 Hz is plenty and keeps us from spamming
     /// MainActor-hop tasks every frame.
@@ -52,6 +53,16 @@ final class GameLoopController: NSObject, SCNSceneRendererDelegate {
         let axes = input.axes
         vehicle.update(axes: axes, dt: dt)
         cameraRig.update(dt: dt)
+
+        #if DEBUG
+        if time - lastDebugLog >= 1.0 {
+            lastDebugLog = time
+            let pos = vehicle.worldPosition
+            print(String(format: "[loop] dt=%.4f throttle=%.2f brake=%.2f speed=%.1f kph pos=(%.2f, %.2f, %.2f)",
+                         dt, axes.throttle, axes.brake, vehicle.speedKPH,
+                         Double(pos.x), Double(pos.y), Double(pos.z)))
+        }
+        #endif
 
         // Throttled telemetry push. Reading speedKPH and assembling the
         // struct is cheap, but spawning 60 MainActor tasks per second adds

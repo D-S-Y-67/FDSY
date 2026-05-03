@@ -24,7 +24,7 @@ struct PhysicsTuning {
     var mass: CGFloat = 800
 
     // Powertrain
-    var maxEngineForce: CGFloat = 1400
+    var maxEngineForce: CGFloat = 4000
     var maxBrakeForce: CGFloat  = 60
 
     // Steering

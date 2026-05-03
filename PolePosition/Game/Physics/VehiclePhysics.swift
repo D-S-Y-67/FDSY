@@ -75,8 +75,10 @@ final class VehiclePhysics {
         body.mass = tuning.mass
         // Lower the centre of mass so the car doesn't roll like a truck.
         // SCNPhysicsBody doesn't expose a direct CoM setter, but biasing
-        // angularDamping helps in the same direction.
-        body.angularDamping = 0.35
+        // angularDamping helps in the same direction. Keep this modest —
+        // values above ~0.2 absorb so much rotational energy that engine
+        // torque can fail to produce visible acceleration.
+        body.angularDamping = 0.1
         body.damping = 0.05
         body.friction = 0.5
         body.rollingFriction = 0.05
@@ -96,10 +98,13 @@ final class VehiclePhysics {
 
             let w = SCNPhysicsVehicleWheel(node: wheelNode)
             w.connectionPosition = wheelNode.position
-            // Local-space spin axis. Negative X for left, positive X for
-            // right — keeps cosmetic spin direction consistent if we ever
-            // animate the wheel mesh by hand.
-            w.axle = vec3(isLeft ? -1 : 1, 0, 0)
+            // Local-space spin axis. ALL four wheels use +X so engine force
+            // pushes them in the same direction. (Earlier we used -X for
+            // left wheels, which inverted their drive torque and meant left
+            // and right rears were fighting each other.) `isLeft` is kept
+            // around for any future per-side tuning.
+            _ = isLeft
+            w.axle = vec3(1, 0, 0)
             w.steeringAxis = vec3(0, -1, 0) // chassis-down, as default
             w.radius = tuning.wheelRadius
             w.frictionSlip = isFront ? tuning.frictionSlipFront : tuning.frictionSlipRear
