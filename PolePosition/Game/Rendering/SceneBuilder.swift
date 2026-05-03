@@ -33,15 +33,18 @@ enum SceneBuilder {
         addLighting(to: scene, skybox: track.skybox)
 
         // --- Ground ---------------------------------------------------
-        // The "outside the track" surface — a big flat slab the same
-        // colour as the track's own ground colour. The track itself sits
-        // a hair above this so its tarmac z-fights nothing.
-        let floor = SCNBox(width: 1200, height: 0.2, length: 1200, chamferRadius: 0)
+        // The "outside the track" surface — a flat slab. Sized to cover
+        // the rough Monaco footprint without extending into the harbor
+        // (where the water plane sits). Top surface at y=-0.05 so the
+        // tarmac (at y=0) sits a clean 5 cm above and the water (at
+        // y=+0.05) sits clearly above the tarmac edge — no z-fighting.
+        let floor = SCNBox(width: 600, height: 0.2, length: 600, chamferRadius: 0)
         floor.firstMaterial = CarGeometry.flatMaterial(track.groundColor.platformColor())
         let floorN = SCNNode(geometry: floor)
-        floorN.position = vec3(0, -0.11, 0)
+        floorN.position = vec3(0, -0.15, 0)
         floorN.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
         floorN.physicsBody?.friction = 0.6
+        floorN.castsShadow = false
         scene.rootNode.addChildNode(floorN)
 
         // --- Track ----------------------------------------------------

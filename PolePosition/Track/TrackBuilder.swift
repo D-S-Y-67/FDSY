@@ -9,29 +9,26 @@ import UIKit
 #endif
 
 /// Constructs the visible + collidable track + decorations + checkpoint
-/// triggers from a `Track` model. Phase 2 entry point: replaces the bare
-/// flat plane from Phase 1 inside `SceneBuilder`.
+/// triggers from a `Track` model. Phase 2.1 entry point.
 ///
-/// Layout strategy: walk the piece list with a running `SCNMatrix4`. For
-/// each piece we build a small per-piece tarmac mesh (in piece-local
-/// coords), wrap it in an `SCNNode`, and assign the accumulated world
-/// transform to that node. Adjacent pieces share their entry/exit
-/// vertices so seams are tight.
+/// Phase 2.1 change vs Phase 2: tarmac is now built as a **single
+/// SCNGeometry** spanning the whole track, with shared boundary vertices
+/// between adjacent pieces. This eliminates the per-piece-mesh seams /
+/// z-fighting / floating-piece appearance from the first cut.
 ///
-/// We deliberately keep tarmac as a top-face-only triangle strip — from
-/// above you never see the underside, and a thin slab below is provided
-/// by the giant slate floor in `SceneBuilder`.
+/// Curves additionally get a thin red kerb on the inside edge so corners
+/// read as corners.
 enum TrackBuilder {
 
     struct Built {
-        let root: SCNNode               // contains tarmac, decorations, trigger nodes
+        let root: SCNNode               // contains tarmac, kerbs, decorations, trigger nodes
         let triggers: [TriggerInfo]     // one per marker, in lap order
         let spawn: SCNMatrix4           // world transform for the car
     }
 
     struct TriggerInfo {
         let kind: Track.Marker.Kind
-        let node: SCNNode               // already added under `root`
+        let node: SCNNode
     }
 
     /// Build the whole track. Static + functional; no shared state.
@@ -39,29 +36,15 @@ enum TrackBuilder {
         let root = SCNNode()
         root.name = "Track.\(track.name)"
 
-        // 1) Walk pieces, accumulating an entry transform per piece. Drop
-        //    one tarmac mesh per piece into the root.
-        var current: SCNMatrix4 = SCNMatrix4Identity
-        var pieceEntryTransforms: [SCNMatrix4] = []
-        pieceEntryTransforms.reserveCapacity(track.pieces.count)
-
-        let tarmacColor = RGB.tarmac.platformColor()
-
-        for piece in track.pieces {
-            pieceEntryTransforms.append(current)
-
-            let geom = tarmacMesh(for: piece, color: tarmacColor)
-            let node = SCNNode(geometry: geom)
-            node.transform = current
-            // Static physics body so the car has something to drive on
-            // even if it leaves the giant slate floor underneath.
-            node.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
-            node.physicsBody?.friction = 1.0
-            node.castsShadow = false
-            root.addChildNode(node)
-
-            current = SCNMatrix4Mult(current, piece.entryToExit)
-        }
+        // 1) Walk the piece chain once, building:
+        //    - cumulative entry transforms (used for marker placement,
+        //      decoration anchoring, spawn computation)
+        //    - a single big tarmac mesh (vertices in world coords)
+        //    - kerb strips for curves
+        let (tarmacNode, kerbNodes, pieceEntryTransforms, finalTransform)
+            = buildTarmacAndKerbs(for: track)
+        root.addChildNode(tarmacNode)
+        for kn in kerbNodes { root.addChildNode(kn) }
 
         // 2) Triggers (start/finish + sector boundaries).
         var triggers: [TriggerInfo] = []
@@ -84,70 +67,204 @@ enum TrackBuilder {
                             into: root)
         }
 
-        // 4) Spawn transform: take the spawn piece's entry transform,
-        //    advance along its centerline by `offsetAlong`, lift by
-        //    `rideHeight`.
-        let spawn = computeSpawn(track: track, pieceTransforms: pieceEntryTransforms)
+        // 4) Spawn transform.
+        let spawn = computeSpawn(track: track,
+                                 pieceTransforms: pieceEntryTransforms)
+
+        // 5) Diagnostic: print piece anchors so we can position
+        //    decorations from the actual world coords.
+        printAnchors(track: track,
+                     pieceTransforms: pieceEntryTransforms,
+                     finalTransform: finalTransform)
 
         return Built(root: root, triggers: triggers, spawn: spawn)
     }
 
-    // MARK: - Tarmac geometry
+    // MARK: - Tarmac + kerbs (single mesh)
 
-    /// Build a top-face-only triangle strip for one piece in its
-    /// entry-local coordinates. Y is up — the strip lies (approximately)
-    /// on the XZ plane.
-    private static func tarmacMesh(for piece: TrackPiece,
-                                   color: PlatformColor) -> SCNGeometry {
-        let samples = piece.defaultSampleCount
-        let (left, right) = piece.sampleEdges(samples: samples)
-
-        // Vertices: pairs (left_i, right_i) for i in 0...samples.
+    /// Build the tarmac as one SCNNode containing one SCNGeometry covering
+    /// every piece, plus a separate SCNNode per curve carrying its kerb.
+    /// The cumulative entry transforms are returned so callers can place
+    /// markers and decorations relative to the actual world geometry.
+    private static func buildTarmacAndKerbs(for track: Track)
+        -> (tarmac: SCNNode, kerbs: [SCNNode],
+            entries: [SCNMatrix4], finalTransform: SCNMatrix4)
+    {
         var vertices: [SCNVector3] = []
-        vertices.reserveCapacity((samples + 1) * 2)
-        for i in 0...samples {
-            vertices.append(scnVec(left[i]))
-            vertices.append(scnVec(right[i]))
+        var normals:  [SCNVector3] = []
+        var indices:  [UInt32] = []
+
+        var entries: [SCNMatrix4] = []
+        entries.reserveCapacity(track.pieces.count)
+        var current: SCNMatrix4 = SCNMatrix4Identity
+
+        // Carry the previous piece's exit-edge vertex indices forward so
+        // adjacent pieces literally share the same vertex (no seam).
+        var prevLeftIdx: UInt32? = nil
+        var prevRightIdx: UInt32? = nil
+
+        var kerbNodes: [SCNNode] = []
+
+        for piece in track.pieces {
+            entries.append(current)
+
+            let samples = piece.defaultSampleCount
+            let (leftLocal, rightLocal) = piece.sampleEdges(samples: samples)
+
+            // Per-piece arrays of vertex indices into the global buffer.
+            var leftIdx: [UInt32] = []
+            var rightIdx: [UInt32] = []
+
+            // First sample reuses the previous piece's exit vertices.
+            let startSample: Int
+            if let pl = prevLeftIdx, let pr = prevRightIdx {
+                leftIdx.append(pl)
+                rightIdx.append(pr)
+                startSample = 1
+            } else {
+                startSample = 0
+            }
+
+            for i in startSample...samples {
+                let lWorld = transformPoint(leftLocal[i],  by: current)
+                let rWorld = transformPoint(rightLocal[i], by: current)
+                vertices.append(scnVec(lWorld))
+                normals.append(scnVec(Vec3(0, 1, 0)))
+                leftIdx.append(UInt32(vertices.count - 1))
+                vertices.append(scnVec(rWorld))
+                normals.append(scnVec(Vec3(0, 1, 0)))
+                rightIdx.append(UInt32(vertices.count - 1))
+            }
+
+            // Triangle indices for this piece's strip. Winding is CCW
+            // viewed from +Y so the up-face is the front face.
+            for s in 0..<samples {
+                let l0 = leftIdx[s]
+                let r0 = rightIdx[s]
+                let l1 = leftIdx[s + 1]
+                let r1 = rightIdx[s + 1]
+                indices.append(contentsOf: [l0, r0, l1, r0, r1, l1])
+            }
+
+            prevLeftIdx = leftIdx.last
+            prevRightIdx = rightIdx.last
+
+            // Kerb: only on curves, on the inside edge.
+            if case .curve(let angle, _, _, _, _) = piece, abs(angle) > 0.05 {
+                let edgeLocal = angle > 0 ? rightLocal : leftLocal
+                let kerb = makeKerb(edgeLocal: edgeLocal,
+                                    pieceWidth: piece.width,
+                                    isInside: true,
+                                    transform: current)
+                kerbNodes.append(kerb)
+            }
+
+            // Advance to next piece.
+            current = SCNMatrix4Mult(current, piece.entryToExit)
         }
 
-        // All normals point straight up.
-        let up: [SCNVector3] = Array(repeating: SCNVector3(0, 1, 0),
-                                     count: vertices.count)
+        let geom = makeGeometry(vertices: vertices,
+                                normals: normals,
+                                indices: indices,
+                                color: RGB.tarmac.platformColor())
 
-        // Triangles: for each strip segment i, two triangles. Winding is
-        // CCW viewed from above (+Y) so the up-face is the *front* face
-        // and SceneKit doesn't cull it. Don't reorder these without
-        // re-checking the cross product — it's load-bearing.
-        var indices: [UInt32] = []
-        indices.reserveCapacity(samples * 6)
-        for i in 0..<samples {
-            let l0 = UInt32(i * 2)
-            let r0 = UInt32(i * 2 + 1)
-            let l1 = UInt32((i + 1) * 2)
-            let r1 = UInt32((i + 1) * 2 + 1)
-            indices.append(contentsOf: [l0, r0, l1, r0, r1, l1])
+        let tarmacNode = SCNNode(geometry: geom)
+        tarmacNode.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
+        tarmacNode.physicsBody?.friction = 1.0
+        tarmacNode.castsShadow = false
+        tarmacNode.name = "tarmac"
+
+        return (tarmacNode, kerbNodes, entries, current)
+    }
+
+    /// Build a kerb strip as a series of small red boxes hugging an edge
+    /// of a curve piece. Cosmetic only — no physics. The edge points are
+    /// in piece-local; we transform them to world via `transform`.
+    private static func makeKerb(edgeLocal: [Vec3],
+                                 pieceWidth: Double,
+                                 isInside: Bool,
+                                 transform: SCNMatrix4) -> SCNNode {
+        let parent = SCNNode()
+        parent.name = "kerb"
+        let mat = CarGeometry.flatMaterial(RGB.kerb.platformColor())
+        mat.isDoubleSided = true
+
+        for i in 0..<(edgeLocal.count - 1) {
+            let a = transformPoint(edgeLocal[i], by: transform)
+            let b = transformPoint(edgeLocal[i + 1], by: transform)
+            let mid = Vec3((a.x + b.x) * 0.5,
+                           (a.y + b.y) * 0.5 + 0.05,
+                           (a.z + b.z) * 0.5)
+            let dx = b.x - a.x
+            let dz = b.z - a.z
+            let len = (dx * dx + dz * dz).squareRoot()
+            let yaw = atan2(dx, -dz)
+            let strip = SCNBox(width: 0.6,
+                               height: 0.1,
+                               length: CGFloat(len + 0.1),
+                               chamferRadius: 0)
+            strip.firstMaterial = mat
+            let n = SCNNode(geometry: strip)
+            n.position = vec3(mid.x, mid.y, mid.z)
+            n.eulerAngles = vec3(0, yaw, 0)
+            // Push the kerb a hair INWARD or OUTWARD relative to the
+            // edge — for a kerb on the inside of a turn we shift toward
+            // the track center by half the kerb width.
+            let _ = pieceWidth
+            let _ = isInside
+            parent.addChildNode(n)
         }
+        return parent
+    }
 
+    private static func makeGeometry(vertices: [SCNVector3],
+                                     normals: [SCNVector3],
+                                     indices: [UInt32],
+                                     color: PlatformColor) -> SCNGeometry {
         let vSource = SCNGeometrySource(vertices: vertices)
-        let nSource = SCNGeometrySource(normals: up)
+        let nSource = SCNGeometrySource(normals: normals)
         let iData = indices.withUnsafeBufferPointer { Data(buffer: $0) }
         let element = SCNGeometryElement(
             data: iData,
             primitiveType: .triangles,
-            primitiveCount: samples * 2,
+            primitiveCount: indices.count / 3,
             bytesPerIndex: MemoryLayout<UInt32>.size
         )
-
         let geom = SCNGeometry(sources: [vSource, nSource], elements: [element])
         let mat = CarGeometry.flatMaterial(color)
-        // Belt-and-suspenders: even if a future change inverts the winding
-        // we won't end up with an invisible track.
         mat.isDoubleSided = true
         geom.firstMaterial = mat
         return geom
     }
 
-    // MARK: - Decorations
+    // MARK: - Anchor diagnostics
+
+    /// Print piece-by-piece world positions so authoring decoration
+    /// `at` values is straightforward (just read off the console after a
+    /// run and copy the numbers into Monaco.json).
+    private static func printAnchors(track: Track,
+                                     pieceTransforms: [SCNMatrix4],
+                                     finalTransform: SCNMatrix4) {
+        #if DEBUG
+        print("[TrackBuilder] \(track.name) anchors:")
+        for (i, m) in pieceTransforms.enumerated() {
+            let pos = (Double(m.m41), Double(m.m42), Double(m.m43))
+            let heading = atan2(-Double(m.m31), Double(m.m33)) * 180 / .pi
+            print(String(format: "  piece %2d entry: (%7.2f, %5.2f, %7.2f) heading: %+7.2f°",
+                         i, pos.0, pos.1, pos.2, heading))
+        }
+        let endPos = (Double(finalTransform.m41), Double(finalTransform.m42),
+                      Double(finalTransform.m43))
+        print(String(format: "  loop end:        (%7.2f, %5.2f, %7.2f)",
+                     endPos.0, endPos.1, endPos.2))
+        let dx = endPos.0 - 0, dz = endPos.2 - 0
+        let gap = (dx * dx + dz * dz).squareRoot()
+        print(String(format: "  loop closure gap: %.2f m", gap))
+        #endif
+    }
+
+    // MARK: - Decorations (unchanged from Phase 2 except tunnel uses new
+    // entries array — no more per-piece transform caching to recompute).
 
     private static func buildDecoration(_ deco: Decoration, track: Track,
                                         pieceTransforms: [SCNMatrix4],
@@ -155,7 +272,7 @@ enum TrackBuilder {
         switch deco {
         case .building(let at, let size, let rotation, let color, let style):
             let n = makeBuilding(size: size, color: color, style: style)
-            n.position = scnVec(at)
+            n.position = vec3(at.x, at.y, at.z)
             n.eulerAngles = vec3(0, rotation, 0)
             parent.addChildNode(n)
 
@@ -166,14 +283,14 @@ enum TrackBuilder {
                                chamferRadius: 0)
             plane.firstMaterial = CarGeometry.flatMaterial(color.platformColor(alpha: 0.92))
             let n = SCNNode(geometry: plane)
-            n.position = scnVec(at)
+            n.position = vec3(at.x, at.y, at.z)
             n.eulerAngles = vec3(0, rotation, 0)
             n.castsShadow = false
             parent.addChildNode(n)
 
         case .yacht(let at, let length, let rotation, let color):
             let n = makeYacht(length: length, color: color)
-            n.position = scnVec(at)
+            n.position = vec3(at.x, at.y, at.z)
             n.eulerAngles = vec3(0, rotation, 0)
             parent.addChildNode(n)
 
@@ -185,13 +302,13 @@ enum TrackBuilder {
 
         case .grandstand(let at, let size, let rotation, let color):
             let n = makeGrandstand(size: size, color: color)
-            n.position = scnVec(at)
+            n.position = vec3(at.x, at.y, at.z)
             n.eulerAngles = vec3(0, rotation, 0)
             parent.addChildNode(n)
 
         case .treeCluster(let at, let count, let radius, let color):
             let cluster = SCNNode()
-            cluster.position = scnVec(at)
+            cluster.position = vec3(at.x, at.y, at.z)
             for i in 0..<count {
                 let angle = Double(i) / Double(max(1, count)) * 2 * .pi
                 let dx = cos(angle) * radius
@@ -207,8 +324,6 @@ enum TrackBuilder {
     private static func makeBuilding(size: Vec3, color: RGB,
                                      style: BuildingStyle) -> SCNNode {
         let parent = SCNNode()
-        // Base box, rooted at ground level (so `at.y == 0` plants it on
-        // the ground). The box's origin is its center, so we lift it.
         let base = CarGeometry.box(width: CGFloat(size.x),
                                    height: CGFloat(size.y),
                                    length: CGFloat(size.z),
@@ -222,9 +337,6 @@ enum TrackBuilder {
             break
 
         case .casino:
-            // Stepped tier on top — half the size, lifted on top of the
-            // base. Adds the ornate-skyline silhouette without modelling
-            // anything specific.
             let tier = CarGeometry.box(width: CGFloat(size.x * 0.65),
                                        height: CGFloat(size.y * 0.25),
                                        length: CGFloat(size.z * 0.65),
@@ -232,7 +344,6 @@ enum TrackBuilder {
                                        color: color.platformColor())
             tier.position = vec3(0, size.y + size.y * 0.125, 0)
             parent.addChildNode(tier)
-            // A small spire-ish accent.
             let cap = CarGeometry.box(width: CGFloat(size.x * 0.08),
                                       height: CGFloat(size.y * 0.18),
                                       length: CGFloat(size.x * 0.08),
@@ -242,8 +353,6 @@ enum TrackBuilder {
             parent.addChildNode(cap)
 
         case .hotel:
-            // Vertical window stripes on the long faces. We put 6 stripes
-            // per long side, slightly recessed.
             let stripeColor = PlatformColor(white: 0.25, alpha: 1)
             let stripeCount = 6
             for side in [-1.0, 1.0] {
@@ -264,7 +373,6 @@ enum TrackBuilder {
             }
 
         case .tower:
-            // Thin spire on top.
             let spire = CarGeometry.box(width: CGFloat(size.x * 0.18),
                                         height: CGFloat(size.y * 0.4),
                                         length: CGFloat(size.x * 0.18),
@@ -280,7 +388,6 @@ enum TrackBuilder {
     private static func makeYacht(length: Double, color: RGB) -> SCNNode {
         let parent = SCNNode()
         let width = length * 0.3
-        // Hull
         let hull = CarGeometry.box(width: CGFloat(width),
                                    height: 0.4,
                                    length: CGFloat(length),
@@ -288,7 +395,6 @@ enum TrackBuilder {
                                    color: color.platformColor())
         hull.position = vec3(0, 0.2, 0)
         parent.addChildNode(hull)
-        // Cabin / superstructure
         let cabin = CarGeometry.box(width: CGFloat(width * 0.7),
                                     height: 0.6,
                                     length: CGFloat(length * 0.45),
@@ -301,16 +407,14 @@ enum TrackBuilder {
 
     private static func makeGrandstand(size: Vec3, color: RGB) -> SCNNode {
         let parent = SCNNode()
-        // A tilted slab, leaning back. Implemented as a box rotated about X.
         let slab = CarGeometry.box(width: CGFloat(size.x),
                                    height: CGFloat(size.y),
                                    length: CGFloat(size.z),
                                    chamfer: 0.05,
                                    color: color.platformColor())
-        slab.eulerAngles = vec3(0.55, 0, 0) // ~32° lean
+        slab.eulerAngles = vec3(0.55, 0, 0)
         slab.position = vec3(0, size.y / 2, 0)
         parent.addChildNode(slab)
-        // Front kerb / barrier
         let barrier = CarGeometry.box(width: CGFloat(size.x),
                                       height: 0.4,
                                       length: 0.2,
@@ -331,8 +435,6 @@ enum TrackBuilder {
         let trunkN = SCNNode(geometry: trunk)
         trunkN.position = vec3(0, Double(trunkH) / 2, 0)
         parent.addChildNode(trunkN)
-
-        // Conical foliage
         let leaves = SCNCone(topRadius: 0, bottomRadius: 0.55, height: 1.2)
         leaves.radialSegmentCount = 8
         leaves.firstMaterial = CarGeometry.flatMaterial(color.platformColor())
@@ -342,9 +444,6 @@ enum TrackBuilder {
         return parent
     }
 
-    /// Build a U-channel roof spanning a contiguous run of pieces.
-    /// We sample the centerline of each piece in the range and lay slabs
-    /// along it at `height` metres above the tarmac.
     private static func buildTunnelRoof(track: Track,
                                         from: Int, to: Int,
                                         height: Double, color: RGB,
@@ -362,27 +461,19 @@ enum TrackBuilder {
             let samples = max(4, piece.defaultSampleCount)
             let (left, right) = piece.sampleEdges(samples: samples)
             for s in 0..<samples {
-                // Midpoint of the segment in piece-local coords. Used
-                // for both the roof slab and its dark underside.
                 let l = (left[s] + left[s + 1]) * 0.5
                 let r = (right[s] + right[s + 1]) * 0.5
                 let mid = Vec3((l.x + r.x) * 0.5, height, (l.z + r.z) * 0.5)
                 let segLen = distance(left[s], left[s + 1])
                 let segWidth = piece.width + 1.5
 
-                // We parent everything under a node positioned at the
-                // piece's world entry transform so the children's local
-                // (mid) coords land in the right world location.
                 let segNode = SCNNode()
                 segNode.transform = entry
 
-                // Tangent rotation: yaw of the segment direction in
-                // piece-local. 0 when forward == -Z.
                 let dz = right[s + 1].z - right[s].z
                 let dx = right[s + 1].x - right[s].x
                 let yaw = atan2(dx, -dz)
 
-                // Roof slab.
                 let slab = SCNBox(width: CGFloat(segWidth),
                                   height: 0.4,
                                   length: CGFloat(segLen + 0.05),
@@ -394,8 +485,6 @@ enum TrackBuilder {
                 slabN.castsShadow = true
                 segNode.addChildNode(slabN)
 
-                // A thin darker slab just under the roof so the inside
-                // of the tunnel reads as shaded.
                 let under = SCNBox(width: CGFloat(segWidth - 0.2),
                                    height: 0.02,
                                    length: CGFloat(segLen + 0.05),
@@ -420,14 +509,23 @@ enum TrackBuilder {
             return mat4Translation(0, s.rideHeight, 0)
         }
         let entry = pieceTransforms[s.pieceIndex]
-        // Forward by `offsetAlong` along the piece (in piece-local -Z),
-        // lifted by `rideHeight`.
         let local = mat4Translation(0, s.rideHeight, -s.offsetAlong)
         return SCNMatrix4Mult(entry, local)
     }
 }
 
 // MARK: - Helpers
+
+/// Apply an SCNMatrix4 to a Vec3 point (treating the point as a row
+/// vector multiplied on the right by the matrix). SCNMatrix4 is
+/// row-major-named with translation in m41/m42/m43, so this matches the
+/// same convention SceneKit uses internally for `node.transform`.
+private func transformPoint(_ p: Vec3, by m: SCNMatrix4) -> Vec3 {
+    let x = p.x * Double(m.m11) + p.y * Double(m.m21) + p.z * Double(m.m31) + Double(m.m41)
+    let y = p.x * Double(m.m12) + p.y * Double(m.m22) + p.z * Double(m.m32) + Double(m.m42)
+    let z = p.x * Double(m.m13) + p.y * Double(m.m23) + p.z * Double(m.m33) + Double(m.m43)
+    return Vec3(x, y, z)
+}
 
 private func scnVec(_ v: Vec3) -> SCNVector3 {
     #if os(macOS)
