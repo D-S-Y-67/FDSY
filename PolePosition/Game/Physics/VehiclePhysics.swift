@@ -108,7 +108,7 @@ final class VehiclePhysics {
             w.suspensionStiffness = tuning.suspensionStiffness
             w.suspensionDamping = tuning.suspensionDamping
             w.suspensionCompression = tuning.suspensionCompression
-            w.maxSuspensionTravel = tuning.maxSuspensionTravel
+            w.maximumSuspensionTravel = tuning.maxSuspensionTravel
             w.suspensionRestLength = tuning.suspensionRestLength
             w.maximumSuspensionForce = tuning.maxSuspensionForce
             built.append(w)
