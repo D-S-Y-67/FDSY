@@ -1,0 +1,71 @@
+import Foundation
+import SceneKit
+
+#if os(macOS)
+import AppKit
+typealias PlatformColor = NSColor
+#else
+import UIKit
+typealias PlatformColor = UIColor
+#endif
+
+/// Cross-platform SCNVector3 constructor. SCNVector3 components are `Float`
+/// on iOS but `CGFloat` (i.e. Double on 64-bit) on macOS. Sticking to one
+/// helper keeps the geometry code identical on both platforms.
+@inlinable
+func vec3(_ x: Double, _ y: Double, _ z: Double) -> SCNVector3 {
+    #if os(macOS)
+    return SCNVector3(x, y, z)
+    #else
+    return SCNVector3(Float(x), Float(y), Float(z))
+    #endif
+}
+
+/// Tiny helpers for building flat-shaded primitives. Phase 1 uses these to
+/// assemble the F1 car procedurally from boxes and cylinders.
+///
+/// Everything here is stateless. We hand back fully-configured `SCNNode`s.
+enum CarGeometry {
+
+    /// A flat-shaded material with no specular highlight. PolyTrack-style.
+    static func flatMaterial(_ color: PlatformColor) -> SCNMaterial {
+        let m = SCNMaterial()
+        m.diffuse.contents = color
+        m.specular.contents = PlatformColor.black
+        m.lightingModel = .blinn
+        m.locksAmbientWithDiffuse = true
+        m.isDoubleSided = false
+        return m
+    }
+
+    /// A box primitive wrapped in a node. `chamfer` rounds the edges
+    /// slightly so polys catch the directional light a bit more cleanly.
+    static func box(width: CGFloat, height: CGFloat, length: CGFloat,
+                    chamfer: CGFloat = 0.01,
+                    color: PlatformColor) -> SCNNode {
+        let g = SCNBox(width: width, height: height, length: length, chamferRadius: chamfer)
+        g.firstMaterial = flatMaterial(color)
+        return SCNNode(geometry: g)
+    }
+
+    /// A cylinder. Default orientation is along Y in SceneKit; pass
+    /// `rotationAxis` and `rotationAngle` if you want it lying along
+    /// another axis.
+    static func cylinder(radius: CGFloat, height: CGFloat,
+                         color: PlatformColor) -> SCNNode {
+        let g = SCNCylinder(radius: radius, height: height)
+        g.radialSegmentCount = 18 // low-poly
+        g.firstMaterial = flatMaterial(color)
+        return SCNNode(geometry: g)
+    }
+
+    /// A wheel: cylinder lying on its side along the X axis (so it spins
+    /// about X when the physics drives it).
+    static func wheel(radius: CGFloat, halfWidth: CGFloat,
+                      color: PlatformColor = .black) -> SCNNode {
+        let n = cylinder(radius: radius, height: halfWidth * 2, color: color)
+        // Rotate so the cylinder's long axis aligns with chassis-local X.
+        n.eulerAngles = vec3(0, 0, .pi / 2)
+        return n
+    }
+}

@@ -1,0 +1,461 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3300000000000000000000A1 /* PolePositionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000A1 /* PolePositionApp.swift */; };
+		3300000000000000000000A2 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000A2 /* AppState.swift */; };
+		3300000000000000000000A3 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000A3 /* RootView.swift */; };
+		3300000000000000000000A4 /* GameLoopController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000A4 /* GameLoopController.swift */; };
+		3300000000000000000000A5 /* InputManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000A5 /* InputManager.swift */; };
+		3300000000000000000000A6 /* VehiclePhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000A6 /* VehiclePhysics.swift */; };
+		3300000000000000000000A7 /* PhysicsTuning.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000A7 /* PhysicsTuning.swift */; };
+		3300000000000000000000A8 /* SceneBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000A8 /* SceneBuilder.swift */; };
+		3300000000000000000000A9 /* CameraRig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000A9 /* CameraRig.swift */; };
+		3300000000000000000000B1 /* CarGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000B1 /* CarGeometry.swift */; };
+		3300000000000000000000B2 /* F1Car.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000B2 /* F1Car.swift */; };
+		3300000000000000000000B3 /* SceneContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000B3 /* SceneContainerView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		2200000000000000000000A1 /* PolePositionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolePositionApp.swift; sourceTree = "<group>"; };
+		2200000000000000000000A2 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		2200000000000000000000A3 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		2200000000000000000000A4 /* GameLoopController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameLoopController.swift; sourceTree = "<group>"; };
+		2200000000000000000000A5 /* InputManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputManager.swift; sourceTree = "<group>"; };
+		2200000000000000000000A6 /* VehiclePhysics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehiclePhysics.swift; sourceTree = "<group>"; };
+		2200000000000000000000A7 /* PhysicsTuning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhysicsTuning.swift; sourceTree = "<group>"; };
+		2200000000000000000000A8 /* SceneBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneBuilder.swift; sourceTree = "<group>"; };
+		2200000000000000000000A9 /* CameraRig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraRig.swift; sourceTree = "<group>"; };
+		2200000000000000000000B1 /* CarGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarGeometry.swift; sourceTree = "<group>"; };
+		2200000000000000000000B2 /* F1Car.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = F1Car.swift; sourceTree = "<group>"; };
+		2200000000000000000000B3 /* SceneContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneContainerView.swift; sourceTree = "<group>"; };
+		2200000000000000000000B4 /* PolePosition.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PolePosition.entitlements; sourceTree = "<group>"; };
+		2200000000000000000000B5 /* PolePosition.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PolePosition.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4400000000000000000000A2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1100000000000000000000A1 = {
+			isa = PBXGroup;
+			children = (
+				1100000000000000000000A3 /* PolePosition */,
+				1100000000000000000000A2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1100000000000000000000A2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2200000000000000000000B5 /* PolePosition.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1100000000000000000000A3 /* PolePosition */ = {
+			isa = PBXGroup;
+			children = (
+				2200000000000000000000A1 /* PolePositionApp.swift */,
+				1100000000000000000000A4 /* App */,
+				1100000000000000000000A5 /* Game */,
+				1100000000000000000000A9 /* Vehicle */,
+				1100000000000000000000B1 /* UI */,
+				1100000000000000000000B2 /* Resources */,
+			);
+			path = PolePosition;
+			sourceTree = "<group>";
+		};
+		1100000000000000000000A4 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				2200000000000000000000A2 /* AppState.swift */,
+				2200000000000000000000A3 /* RootView.swift */,
+				2200000000000000000000A4 /* GameLoopController.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		1100000000000000000000A5 /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				1100000000000000000000A6 /* Engine */,
+				1100000000000000000000A7 /* Physics */,
+				1100000000000000000000A8 /* Rendering */,
+			);
+			path = Game;
+			sourceTree = "<group>";
+		};
+		1100000000000000000000A6 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				2200000000000000000000A5 /* InputManager.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+		1100000000000000000000A7 /* Physics */ = {
+			isa = PBXGroup;
+			children = (
+				2200000000000000000000A6 /* VehiclePhysics.swift */,
+				2200000000000000000000A7 /* PhysicsTuning.swift */,
+			);
+			path = Physics;
+			sourceTree = "<group>";
+		};
+		1100000000000000000000A8 /* Rendering */ = {
+			isa = PBXGroup;
+			children = (
+				2200000000000000000000A8 /* SceneBuilder.swift */,
+				2200000000000000000000A9 /* CameraRig.swift */,
+			);
+			path = Rendering;
+			sourceTree = "<group>";
+		};
+		1100000000000000000000A9 /* Vehicle */ = {
+			isa = PBXGroup;
+			children = (
+				2200000000000000000000B1 /* CarGeometry.swift */,
+				2200000000000000000000B2 /* F1Car.swift */,
+			);
+			path = Vehicle;
+			sourceTree = "<group>";
+		};
+		1100000000000000000000B1 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				2200000000000000000000B3 /* SceneContainerView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		1100000000000000000000B2 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				2200000000000000000000B4 /* PolePosition.entitlements */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BBBBBBBBBBBBBBBBBBBBBBBB /* PolePosition */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6600000000000000000000A2 /* Build configuration list for PBXNativeTarget "PolePosition" */;
+			buildPhases = (
+				4400000000000000000000A1 /* Sources */,
+				4400000000000000000000A2 /* Frameworks */,
+				4400000000000000000000A3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PolePosition;
+			productName = PolePosition;
+			productReference = 2200000000000000000000B5 /* PolePosition.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AAAAAAAAAAAAAAAAAAAAAAAA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1530;
+				LastUpgradeCheck = 1530;
+				TargetAttributes = {
+					BBBBBBBBBBBBBBBBBBBBBBBB = {
+						CreatedOnToolsVersion = 15.3;
+					};
+				};
+			};
+			buildConfigurationList = 6600000000000000000000A1 /* Build configuration list for PBXProject "PolePosition" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 1100000000000000000000A1;
+			productRefGroup = 1100000000000000000000A2 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BBBBBBBBBBBBBBBBBBBBBBBB /* PolePosition */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4400000000000000000000A3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4400000000000000000000A1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3300000000000000000000A1 /* PolePositionApp.swift in Sources */,
+				3300000000000000000000A2 /* AppState.swift in Sources */,
+				3300000000000000000000A3 /* RootView.swift in Sources */,
+				3300000000000000000000A4 /* GameLoopController.swift in Sources */,
+				3300000000000000000000A5 /* InputManager.swift in Sources */,
+				3300000000000000000000A6 /* VehiclePhysics.swift in Sources */,
+				3300000000000000000000A7 /* PhysicsTuning.swift in Sources */,
+				3300000000000000000000A8 /* SceneBuilder.swift in Sources */,
+				3300000000000000000000A9 /* CameraRig.swift in Sources */,
+				3300000000000000000000B1 /* CarGeometry.swift in Sources */,
+				3300000000000000000000B2 /* F1Car.swift in Sources */,
+				3300000000000000000000B3 /* SceneContainerView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5500000000000000000000A1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		5500000000000000000000A2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		5500000000000000000000A3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PolePosition/Resources/PolePosition.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PolePosition;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.poleposition.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5500000000000000000000A4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PolePosition/Resources/PolePosition.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PolePosition;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.poleposition.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6600000000000000000000A1 /* Build configuration list for PBXProject "PolePosition" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5500000000000000000000A1 /* Debug */,
+				5500000000000000000000A2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6600000000000000000000A2 /* Build configuration list for PBXNativeTarget "PolePosition" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5500000000000000000000A3 /* Debug */,
+				5500000000000000000000A4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AAAAAAAAAAAAAAAAAAAAAAAA /* Project object */;
+}
