@@ -21,6 +21,28 @@ func vec3(_ x: Double, _ y: Double, _ z: Double) -> SCNVector3 {
     #endif
 }
 
+/// Cross-platform SCNMatrix4 translation. Same Float/CGFloat split as
+/// `vec3` — `SCNMatrix4MakeTranslation` is `CGFloat`-typed on macOS and
+/// `Float`-typed on iOS.
+@inlinable
+func mat4Translation(_ x: Double, _ y: Double, _ z: Double) -> SCNMatrix4 {
+    #if os(macOS)
+    return SCNMatrix4MakeTranslation(x, y, z)
+    #else
+    return SCNMatrix4MakeTranslation(Float(x), Float(y), Float(z))
+    #endif
+}
+
+/// Cross-platform SCNMatrix4 rotation around an axis (radians).
+@inlinable
+func mat4Rotation(_ angle: Double, _ x: Double, _ y: Double, _ z: Double) -> SCNMatrix4 {
+    #if os(macOS)
+    return SCNMatrix4MakeRotation(angle, x, y, z)
+    #else
+    return SCNMatrix4MakeRotation(Float(angle), Float(x), Float(y), Float(z))
+    #endif
+}
+
 /// Tiny helpers for building flat-shaded primitives. Phase 1 uses these to
 /// assemble the F1 car procedurally from boxes and cylinders.
 ///

@@ -417,14 +417,12 @@ enum TrackBuilder {
                                      pieceTransforms: [SCNMatrix4]) -> SCNMatrix4 {
         let s = track.spawn
         guard track.pieces.indices.contains(s.pieceIndex) else {
-            return SCNMatrix4MakeTranslation(0, Float(s.rideHeight), 0)
+            return mat4Translation(0, s.rideHeight, 0)
         }
         let entry = pieceTransforms[s.pieceIndex]
         // Forward by `offsetAlong` along the piece (in piece-local -Z),
         // lifted by `rideHeight`.
-        let local = SCNMatrix4MakeTranslation(0,
-                                              Float(s.rideHeight),
-                                              Float(-s.offsetAlong))
+        let local = mat4Translation(0, s.rideHeight, -s.offsetAlong)
         return SCNMatrix4Mult(entry, local)
     }
 }

@@ -51,7 +51,7 @@ enum TrackPiece: Codable, Equatable {
     var entryToExit: SCNMatrix4 {
         switch self {
         case .straight(let length, _, let rise, _):
-            return SCNMatrix4MakeTranslation(0, Float(rise), Float(-length))
+            return mat4Translation(0, rise, -length)
 
         case .curve(let angle, let radius, _, let rise, _):
             // Right turn (positive `angle`) = clockwise viewed from above
@@ -62,8 +62,8 @@ enum TrackPiece: Codable, Equatable {
             // by Δ = (radius·(1 − cos θ), 0, −radius·sin θ).
             let dx = radius * (1 - cos(angle))   // sideways toward the turn
             let dz = -radius * sin(angle)         // along forward (-Z)
-            let translate = SCNMatrix4MakeTranslation(Float(dx), Float(rise), Float(dz))
-            let rotate    = SCNMatrix4MakeRotation(Float(-angle), 0, 1, 0)
+            let translate = mat4Translation(dx, rise, dz)
+            let rotate    = mat4Rotation(-angle, 0, 1, 0)
             // Apply rotation first, then translation: M = T · R.
             return SCNMatrix4Mult(translate, rotate)
         }
