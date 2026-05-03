@@ -59,6 +59,7 @@ final class KeyboardSCNView: SCNView {
     weak var input: InputManager?
 
     override var acceptsFirstResponder: Bool { true }
+    override var canBecomeKeyView: Bool { true }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
@@ -82,9 +83,20 @@ final class KeyboardSCNView: SCNView {
         NotificationCenter.default.removeObserver(self)
     }
 
+    /// Reclaim first responder on click. SwiftUI sometimes hands focus back
+    /// to its own root view after layout — clicking inside the scene gets
+    /// us back in the responder chain.
+    override func mouseDown(with event: NSEvent) {
+        window?.makeFirstResponder(self)
+        super.mouseDown(with: event)
+    }
+
     override func keyDown(with event: NSEvent) {
         if event.isARepeat { return }
         if let key = InputManager.keyForMacKeyCode(event.keyCode) {
+            #if DEBUG
+            print("[KeyboardSCNView] keyDown \(event.keyCode) → \(key)")
+            #endif
             input?.keyDown(key)
             return
         }
