@@ -152,27 +152,30 @@ final class VehiclePhysics {
 
         // --- Engine + brake -------------------------------------------
         // RWD: drive only the rear wheels (2 = RL, 3 = RR). The brake key
-        // (S) does double duty: above the reverse threshold it applies
-        // brake torque, below it it applies a backward engine force so
-        // the car backs up. This is the standard arcade-racer behaviour.
-        let speedKPH = vehicle.speedInKilometersPerHour
+        // (S) does double duty:
+        //   - above the reverse threshold (forward speed > 5 kph) it
+        //     applies brake torque,
+        //   - at or below it (slow forward, stopped, or reversing at any
+        //     speed) it applies a backward engine force.
+        //
+        // Crucially we test *signed* speed, not |speed|. If we used |speed|
+        // the car would flip between "reverse" and "brake" once it crossed
+        // -5 kph reversing, fighting itself and never gaining speed.
+        let signedSpeed = Double(vehicle.speedInKilometersPerHour)
         let throttle = CGFloat(axes.throttle)
         let brakeIn  = CGFloat(axes.brake)
 
         var engineForce: CGFloat = throttle * tuning.maxEngineForce
-        if throttle == 0 && brakeIn > 0 && abs(Double(speedKPH)) <= tuning.reverseSpeedThresholdKPH {
-            // Reverse — half the forward force is plenty for arcade backing-up.
+        if throttle == 0 && brakeIn > 0 && signedSpeed <= tuning.reverseSpeedThresholdKPH {
             engineForce = -brakeIn * tuning.maxEngineForce * tuning.reverseForceFraction
         }
         vehicle.applyEngineForce(engineForce, forWheelAt: 2)
         vehicle.applyEngineForce(engineForce, forWheelAt: 3)
 
-        // Brake torque on all four wheels — only when actually braking
-        // (not while we're using the brake key as reverse), and only when
-        // moving fast enough that "brake" is meaningful.
-        let isReversing = throttle == 0 && brakeIn > 0 &&
-            abs(Double(speedKPH)) <= tuning.reverseSpeedThresholdKPH
-        let brakeTorque: CGFloat = (brakeIn > 0 && !isReversing) ?
+        // Brake torque only when moving forward faster than the threshold
+        // and the brake key is held. While reversing we apply zero brake
+        // torque so reverse motion is unimpeded.
+        let brakeTorque: CGFloat = (brakeIn > 0 && signedSpeed > tuning.reverseSpeedThresholdKPH) ?
             brakeIn * tuning.maxBrakeForce : 0
         for i in 0..<4 {
             vehicle.applyBrakingForce(brakeTorque, forWheelAt: i)
