@@ -138,7 +138,18 @@ final class VehiclePhysics {
         // Target steering angle in radians. Negated because steeringAxis
         // is -Y (chassis-down), which inverts the rotation direction
         // relative to the user's intent (positive steer = turn right).
-        let target = -CGFloat(axes.steer) * tuning.maxSteerRadians
+        //
+        // Speed-dependent taper: at high speed we reduce the maximum
+        // angle so the car doesn't dart at full lock when going 250 kph.
+        // At the knee speed and above the lock is reduced to the floor
+        // fraction. Real F1 sims do this; arcade racers do this; only
+        // the tuning constants differ.
+        let speedKPHAbs = abs(Double(vehicle.speedInKilometersPerHour))
+        let knee = max(1.0, tuning.highSpeedSteerKnee)
+        let speedT = min(1.0, max(0.0, speedKPHAbs / knee))
+        let lockFactor = 1.0 + (tuning.highSpeedSteerFloor - 1.0) * speedT
+        let effectiveMaxSteer = tuning.maxSteerRadians * CGFloat(lockFactor)
+        let target = -CGFloat(axes.steer) * effectiveMaxSteer
         // Frame-rate independent exponential lerp:
         //   value += (target - value) * (1 - exp(-rate * dt))
         // At 60 fps with rate = 12 this resolves ~80 % toward target each

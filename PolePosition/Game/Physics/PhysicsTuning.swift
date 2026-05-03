@@ -33,18 +33,23 @@ struct PhysicsTuning {
     var reverseForceFraction: CGFloat = 0.5
 
     // Steering
-    // Lowered from the Phase 1 default (0.55, 12.0) — the previous values
-    // made the car turn too sharply for keyboard taps. With these values
-    // a quarter-second tap of D moves the steering smoothly toward lock
-    // without snapping. Bump back up if you want twitchier kart-style
-    // handling.
-    var maxSteerRadians: CGFloat = 0.40       // ≈ 23°
-    var steerLerp: CGFloat       = 6.0        // larger = snappier response
+    // Tuning history:
+    //   Phase 1 default (0.55, 12.0) was twitchy on keyboard.
+    //   Phase 2.2 (0.40, 6.0) was still too eager.
+    //   Phase 2.3 (0.28, 3.5) plus a speed-dependent taper below.
+    // Bump back up if you want kart-style handling.
+    var maxSteerRadians: CGFloat = 0.28       // ≈ 16°
+    var steerLerp: CGFloat       = 3.5        // larger = snappier response
+
+    /// Steering reduction at high speed. The effective max-steer angle
+    /// is multiplied by `lerp(1.0, highSpeedSteerFloor, speed/highSpeedSteerKnee)`,
+    /// clamped 0–1. So at 0 km/h the player gets full lock; at the knee
+    /// speed and above they get the floor fraction.
+    var highSpeedSteerKnee: Double  = 150     // km/h
+    var highSpeedSteerFloor: Double = 0.45    // fraction of max steer at high speed
 
     // Tyre grip
     var frictionSlipFront: CGFloat = 1.6
-    // Rear nudged from 1.4 → 1.55 so throttle-on oversteer is less
-    // immediate. Drop again if you want the rear loose for arcade drifts.
     var frictionSlipRear: CGFloat  = 1.55
 
     // Suspension

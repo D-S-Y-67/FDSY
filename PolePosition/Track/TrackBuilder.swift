@@ -160,13 +160,15 @@ enum TrackBuilder {
             }
 
             // Walls on both sides of every piece, with static physics so
-            // the car can't drive off.
-            let leftWall = makeWall(edgeLocal: leftLocal, transform: current,
-                                    color: RGB.hotelWhite.platformColor())
-            let rightWall = makeWall(edgeLocal: rightLocal, transform: current,
-                                     color: RGB.hotelWhite.platformColor())
-            kerbNodes.append(leftWall)
-            kerbNodes.append(rightWall)
+            // the car can't drive off. Returned flat (one node per
+            // segment) so each gets its own bounding box and SceneKit
+            // can't accidentally cull a parent that "looks small."
+            let leftWalls  = makeWallNodes(edgeLocal: leftLocal,  transform: current,
+                                           color: RGB.hotelWhite.platformColor())
+            let rightWalls = makeWallNodes(edgeLocal: rightLocal, transform: current,
+                                           color: RGB.hotelWhite.platformColor())
+            kerbNodes.append(contentsOf: leftWalls)
+            kerbNodes.append(contentsOf: rightWalls)
 
             // Advance to next piece.
             current = SCNMatrix4Mult(current, piece.entryToExit)
@@ -226,18 +228,17 @@ enum TrackBuilder {
         return parent
     }
 
-    /// Build a static-body wall along an edge — a chain of thin tall
-    /// boxes, one per segment of the piece. Used to prevent the car
-    /// driving off the track.
-    private static func makeWall(edgeLocal: [Vec3],
-                                 transform: SCNMatrix4,
-                                 color: PlatformColor) -> SCNNode {
-        let parent = SCNNode()
-        parent.name = "wall"
+    /// Build the wall along an edge as a flat array of `SCNNode`s — one
+    /// box per segment of the piece. Returning them flat (vs nested under
+    /// a parent) means each node carries its own bounding box and
+    /// SceneKit's frustum culling won't accidentally drop the whole row
+    /// once the camera turns.
+    private static func makeWallNodes(edgeLocal: [Vec3],
+                                      transform: SCNMatrix4,
+                                      color: PlatformColor) -> [SCNNode] {
         let mat = CarGeometry.flatMaterial(color)
-        // A reddish stripe near the top so walls read as "barrier" rather
-        // than "building". Single material here for performance — Phase 4
-        // can swap in a striped texture or a per-segment second material.
+        var out: [SCNNode] = []
+        out.reserveCapacity(edgeLocal.count - 1)
 
         for i in 0..<(edgeLocal.count - 1) {
             let a = transformPoint(edgeLocal[i], by: transform)
@@ -250,22 +251,23 @@ enum TrackBuilder {
             let yaw = atan2(dx, -dz)
 
             let box = SCNBox(width: 0.4,
-                             height: 1.5,
+                             height: 1.6,
                              length: CGFloat(len + 0.05),
                              chamferRadius: 0)
             box.firstMaterial = mat
             let n = SCNNode(geometry: box)
-            // Wall sits on the tarmac with the box centered vertically
-            // (so half-height of 0.75 puts top at y=1.5 above tarmac).
-            n.position = vec3(midX, 0.75, midZ)
+            n.position = vec3(midX, 0.8, midZ)
             n.eulerAngles = vec3(0, yaw, 0)
             n.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
             n.physicsBody?.friction = 0.3
             n.physicsBody?.restitution = 0.1
-            n.castsShadow = true
-            parent.addChildNode(n)
+            // No shadow casting — at ~800 walls the deferred shadow pass
+            // can drop the whole batch on Apple Silicon.
+            n.castsShadow = false
+            n.name = "wall"
+            out.append(n)
         }
-        return parent
+        return out
     }
 
     private static func makeGeometry(vertices: [SCNVector3],
