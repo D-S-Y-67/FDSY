@@ -57,16 +57,17 @@ enum SceneBuilder {
         scene.rootNode.addChildNode(sun)
 
         // --- Ground plane --------------------------------------------
-        // Use SCNFloor so it tiles to the horizon. For Phase 1 the floor
-        // is a plain slate grey — Phase 2's track pieces will sit on top
-        // of (or replace) this.
-        let floorGeo = SCNFloor()
-        floorGeo.reflectivity = 0.0
+        // A big flat box. Earlier revisions used SCNFloor, but its
+        // reflection ("FloorPass") doesn't link into the render graph in
+        // this setup and spams `Pass FloorPass is not linked …` every
+        // frame. A plain box has no such pipeline, looks identical for our
+        // purposes, and gives the physics a clean static shape.
+        let floorGeo = SCNBox(width: 400, height: 0.2, length: 400, chamferRadius: 0)
         floorGeo.firstMaterial = CarGeometry.flatMaterial(
             PlatformColor(red: 0.30, green: 0.32, blue: 0.34, alpha: 1)
         )
         let floor = SCNNode(geometry: floorGeo)
-        // Static physics body so the wheels have something to push on.
+        floor.position = vec3(0, -0.1, 0) // top surface at y = 0
         floor.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
         floor.physicsBody?.friction = 1.0
         scene.rootNode.addChildNode(floor)
