@@ -64,16 +64,13 @@ final class VehiclePhysics {
         self.tuning = tuning
         self.spawnTransform = chassisNode.transform
 
-        // 1) Chassis physics body. We use the chassis node's geometry as
-        //    the collision shape via .convexHull — fast, slightly larger
-        //    than the box but totally fine for an arcade racer. We could
-        //    use a hand-tuned compound shape later if needed, but the
-        //    hull is fine for Phase 1.
-        let shapeOptions: [SCNPhysicsShape.Option: Any] = [
-            .type: SCNPhysicsShape.ShapeType.convexHull,
-            .keepAsCompound: NSNumber(value: false)
-        ]
-        let shape = SCNPhysicsShape(node: chassisNode, options: shapeOptions)
+        // 1) Chassis physics body. Hand-built box shape — fast, predictable,
+        //    and importantly excludes the wheel children (they get their own
+        //    physics through SCNPhysicsVehicleWheel).
+        //    Earlier revisions used SCNPhysicsShape(node:options:.convexHull)
+        //    which can stall for seconds on a tree with many children.
+        let chassisBox = SCNBox(width: 1.6, height: 0.7, length: 4.6, chamferRadius: 0.05)
+        let shape = SCNPhysicsShape(geometry: chassisBox, options: nil)
         let body = SCNPhysicsBody(type: .dynamic, shape: shape)
         body.mass = tuning.mass
         // Lower the centre of mass so the car doesn't roll like a truck.

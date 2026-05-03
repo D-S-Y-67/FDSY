@@ -15,6 +15,11 @@ final class GameLoopController: NSObject, SCNSceneRendererDelegate {
     private weak var appState: AppState?
 
     private var lastTime: TimeInterval = 0
+    private var lastTelemetryPush: TimeInterval = 0
+
+    /// HUD doesn't need 60 Hz; 10 Hz is plenty and keeps us from spamming
+    /// MainActor-hop tasks every frame.
+    private let telemetryPushInterval: TimeInterval = 0.1
 
     init(input: InputManager,
          vehicle: VehiclePhysics,
@@ -30,6 +35,7 @@ final class GameLoopController: NSObject, SCNSceneRendererDelegate {
         // First frame: just record the timestamp and bail.
         if lastTime == 0 {
             lastTime = time
+            lastTelemetryPush = time
             return
         }
         let dt = min(max(time - lastTime, 0.0), 1.0 / 20.0) // clamp to avoid
@@ -47,15 +53,17 @@ final class GameLoopController: NSObject, SCNSceneRendererDelegate {
         vehicle.update(axes: axes, dt: dt)
         cameraRig.update(dt: dt)
 
-        // Push telemetry to SwiftUI on the main actor. We use Task instead
-        // of MainActor.run so we don't block this render-thread call.
-        let telem = Telemetry(
-            speedKPH: vehicle.speedKPH,
-            throttle: axes.throttle,
-            brake: axes.brake,
-            steering: axes.steer
-        )
-        if let appState {
+        // Throttled telemetry push. Reading speedKPH and assembling the
+        // struct is cheap, but spawning 60 MainActor tasks per second adds
+        // up — 10 Hz is plenty for the HUD.
+        if time - lastTelemetryPush >= telemetryPushInterval, let appState {
+            lastTelemetryPush = time
+            let telem = Telemetry(
+                speedKPH: vehicle.speedKPH,
+                throttle: axes.throttle,
+                brake: axes.brake,
+                steering: axes.steer
+            )
             Task { @MainActor in
                 appState.telemetry = telem
             }
