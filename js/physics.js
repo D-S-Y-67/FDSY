@@ -198,11 +198,23 @@ export function createWorld() {
  * Build a chassis rigid body. The returned object also carries scratch
  * state that `stepVehicle` reads/writes each frame.
  *
- * @param {{x:number,y:number,z:number}} [position]
+ * @param {object} world
+ * @param {{x:number, y:number, z:number, yaw?:number}} [position]
+ *        Spawn pose. yaw in radians — 0 means facing -Z (game default).
  */
-export function createVehicle(world, position = { x: 0, y: TUNING.spawnHeight, z: 0 }) {
+export function createVehicle(world, position = { x: 0, y: TUNING.spawnHeight, z: 0, yaw: 0 }) {
+  const yaw = position.yaw ?? 0;
+  // Quaternion for Y-axis rotation by yaw (right-hand rule). Stored so we
+  // can restore it on reset without re-deriving.
+  const spawnQuat = {
+    x: 0,
+    y: Math.sin(yaw / 2),
+    z: 0,
+    w: Math.cos(yaw / 2),
+  };
   const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
     .setTranslation(position.x, position.y, position.z)
+    .setRotation(spawnQuat)
     .setLinearDamping(TUNING.linearDamping)
     .setAngularDamping(TUNING.angularDamping)
     // CCD prevents the chassis tunneling through ground at high speed.
@@ -230,23 +242,24 @@ export function createVehicle(world, position = { x: 0, y: TUNING.spawnHeight, z
 
   return {
     body,
-    spawn: { ...position },
+    spawn: { x: position.x, y: position.y, z: position.z },
+    spawnRotation: { ...spawnQuat },
     smoothedSteer: 0,           // tracks input.steer with rate-limited slewing
     speedKmh: 0,                // |velocity|, always non-negative (HUD readout)
     forwardSpeedSigned: 0,      // m/s along chassis forward (negative = reversing)
     slipAngleDeg: 0,
     // Render-interpolation snapshots (read by vehicle.js#updateVehicleMesh)
     prevTranslation: { x: position.x, y: position.y, z: position.z },
-    prevRotation:    { x: 0, y: 0, z: 0, w: 1 },
+    prevRotation:    { ...spawnQuat },
     currTranslation: { x: position.x, y: position.y, z: position.z },
-    currRotation:    { x: 0, y: 0, z: 0, w: 1 },
+    currRotation:    { ...spawnQuat },
   };
 }
 
 /** Snap the vehicle back to its spawn pose with zero velocities. */
 export function resetVehicle(vehicle) {
   vehicle.body.setTranslation(vehicle.spawn, true);
-  vehicle.body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
+  vehicle.body.setRotation(vehicle.spawnRotation, true);
   vehicle.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
   vehicle.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
   vehicle.smoothedSteer = 0;
@@ -257,8 +270,8 @@ export function resetVehicle(vehicle) {
   // teleport (which would flash a long streak between old and new pose).
   vehicle.prevTranslation = { ...vehicle.spawn };
   vehicle.currTranslation = { ...vehicle.spawn };
-  vehicle.prevRotation = { x: 0, y: 0, z: 0, w: 1 };
-  vehicle.currRotation = { x: 0, y: 0, z: 0, w: 1 };
+  vehicle.prevRotation    = { ...vehicle.spawnRotation };
+  vehicle.currRotation    = { ...vehicle.spawnRotation };
 }
 
 // -----------------------------------------------------------------------------

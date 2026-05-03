@@ -1,8 +1,10 @@
-// Debug HUD writer for Phase 1.
-// The full F1-broadcast HUD (lap timer, sectors, deltas, tire icon, ERS bar,
-// minimap, etc.) lands in Phase 9 polish. This is just the readouts a
-// physics-tuner needs: speed, FPS, slip angle. Gear is a placeholder until
-// we wire a gearbox simulation in a later phase.
+// HUD writer.
+// Top-left block: speed/gear/inputs (driver-tuner readouts).
+// Top-right block: lap timer, sector chips, last+best lap, race events.
+// Full F1-broadcast styling (tire icon, ERS bar, minimap, etc.) lands in
+// Phase 9 polish.
+
+import { formatLapTime, formatSectorTime, DELTA_PURPLE, DELTA_GREEN, DELTA_RED } from "./systems/timing.js";
 
 const el = (id) => document.getElementById(id);
 const $speed     = el("speed");
@@ -17,6 +19,17 @@ const $keyD      = el("key-d");
 const $steerVal  = el("steer-val");
 const $loading   = el("loading");
 const $loadingDetail = el("loading-detail");
+
+const $lapTimer  = el("lap-timer");
+const $lastLap   = el("last-lap");
+const $bestLap   = el("best-lap");
+const $lapCount  = el("lap-count");
+const $sectors   = [el("sector-1"), el("sector-2"), el("sector-3")];
+const $raceEvent = el("race-event");
+
+// Cached state to avoid touching the DOM every frame for unchanged values.
+let lastEventStr = "";
+let lastInvalid  = false;
 
 // Threshold (m/s) below which the car is considered "in neutral" for the
 // gear chip readout. Same scale as physics.js#TUNING.brakeReverseThreshold.
@@ -43,9 +56,10 @@ export function hideLoading() {
  * @param {{ speedKmh:number, forwardSpeedSigned:number,
  *          slipAngleDeg:number, smoothedSteer:number }} vehicle
  * @param {{ throttle:number, brake:number, steer:number }} input
- * @param {number} frameDtSec  - render-frame delta seconds (not the physics dt)
+ * @param {object} timing       - createTiming() state object
+ * @param {number} frameDtSec   - render-frame delta seconds (not the physics dt)
  */
-export function updateHud(vehicle, input, frameDtSec) {
+export function updateHud(vehicle, input, timing, frameDtSec) {
   $speed.textContent = Math.max(0, Math.round(vehicle.speedKmh)).toString();
 
   // Direction-aware unit + gear readout. Reading vehicle.forwardSpeedSigned
@@ -84,4 +98,56 @@ export function updateHud(vehicle, input, frameDtSec) {
   $keyA.classList.toggle("active", input.steer    < 0);
   $keyD.classList.toggle("active", input.steer    > 0);
   $steerVal.textContent = vehicle.smoothedSteer.toFixed(2);
+
+  if (timing) updateTimingHud(timing);
+}
+
+// ---------------------------------------------------------------------------
+// Timing block — top-right HUD.
+// ---------------------------------------------------------------------------
+
+function updateTimingHud(t) {
+  // Lap timer: live current lap if running, else 0:00.000.
+  $lapTimer.textContent = t.state === "PRE_LAP"
+    ? formatLapTime(0)
+    : formatLapTime(t.currentLapMs);
+
+  // Sector chips. The active sector shows the current running time;
+  // completed sectors show their locked-in time + colour code.
+  for (let i = 0; i < 3; i++) {
+    const sec = $sectors[i];
+    const key = `s${i + 1}`;
+    const idx1 = i + 1;
+    const time = t.sectorTimes[key];
+    const colour = t.deltaColours[key];
+
+    sec.classList.remove("active", "purple", "green", "red");
+
+    if (t.state !== "PRE_LAP" && t.currentSector === idx1) {
+      // Currently running this sector — show wall-clock time.
+      sec.classList.add("active");
+      sec.querySelector(".time").textContent = formatSectorTime(t.currentSectorMs);
+    } else if (time > 0) {
+      // Completed earlier this lap — show locked time + delta colour.
+      if      (colour === DELTA_PURPLE) sec.classList.add("purple");
+      else if (colour === DELTA_GREEN)  sec.classList.add("green");
+      else if (colour === DELTA_RED)    sec.classList.add("red");
+      sec.querySelector(".time").textContent = formatSectorTime(time);
+    } else {
+      sec.querySelector(".time").textContent = "—";
+    }
+  }
+
+  $lastLap.textContent  = formatLapTime(t.lastLapMs);
+  $bestLap.textContent  = formatLapTime(t.bestLapMs);
+  $lapCount.textContent = t.lapCount.toString();
+
+  // Race event banner (changes infrequently; only touch DOM on change).
+  const evStr = t.lastEvent || "";
+  if (evStr !== lastEventStr || t.invalidLap !== lastInvalid) {
+    $raceEvent.textContent = evStr || " ";  // nbsp keeps line height
+    $raceEvent.classList.toggle("invalid", evStr.includes("invalidated"));
+    lastEventStr = evStr;
+    lastInvalid  = t.invalidLap;
+  }
 }

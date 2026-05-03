@@ -144,6 +144,126 @@ html, body {
   letter-spacing: 0.04em;
 }
 
+/* --- Lap timing HUD (top-right) --- */
+#hud-timing {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  padding: 14px 18px;
+  background: rgba(10, 14, 22, 0.72);
+  border-right: 3px solid #ff8000;
+  border-radius: 4px;
+  font-feature-settings: "tnum";
+  user-select: none;
+  pointer-events: none;
+  min-width: 240px;
+  text-align: right;
+}
+
+#lap-timer {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: 12px;
+  color: #fff;
+}
+
+#sectors {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.sector {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.sector .label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #889;
+  letter-spacing: 0.12em;
+}
+
+.sector .time {
+  display: block;
+  margin-top: 2px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #ddd;
+}
+
+/* Active (currently running) sector glows orange. */
+.sector.active {
+  background: rgba(255, 128, 0, 0.18);
+  border-color: rgba(255, 128, 0, 0.45);
+}
+
+/* Completed-sector colour codes — purple > green > red. */
+.sector.purple { background: #7b3ff2; border-color: #9d6cff; color: #fff; }
+.sector.purple .label, .sector.purple .time { color: #fff; }
+.sector.green  { background: #2faa4a; border-color: #4acc66; color: #fff; }
+.sector.green  .label, .sector.green  .time { color: #fff; }
+.sector.red    { background: #c63b2c; border-color: #e6533f; color: #fff; }
+.sector.red    .label, .sector.red    .time { color: #fff; }
+
+#lap-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 12px;
+  font-size: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 8px;
+}
+
+#lap-summary > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+#lap-summary .label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #889;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+#lap-summary > div > span:not(.label) {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #ddd;
+}
+
+#race-event {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  color: #ff8000;
+  text-align: right;
+  letter-spacing: 0.04em;
+  min-height: 14px;
+  font-style: italic;
+}
+
+#race-event.invalid {
+  color: #ff4838;
+}
+
 /* --- Loading splash --- */
 #loading {
   position: fixed;

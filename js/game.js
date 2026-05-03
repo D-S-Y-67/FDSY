@@ -12,6 +12,8 @@ import { TUNING, stepVehicle, resetVehicle } from "./physics.js";
 import { updateVehicleMesh } from "./vehicle.js";
 import { readInput } from "./input.js";
 import { updateHud } from "./ui.js";
+import { detectCrossings } from "./track.js";
+import { updateTiming, resetTiming } from "./systems/timing.js";
 
 const FIXED_DT = 1 / 60;          // physics tick — do NOT vary this
 const MAX_FRAME_DT = 0.25;        // clamp to survive tab-switches / breakpoints
@@ -38,10 +40,16 @@ let cameraInitialized = false;
  * Start the main game loop. Returns the frame-id of the active rAF if you
  * ever need to cancel it (unused in Phase 1).
  */
-export function startLoop({ scene, camera, renderer, world, vehicle, mesh }) {
+export function startLoop({ scene, camera, renderer, world, vehicle, mesh, track, timing }) {
   let lastTime = performance.now();
   let accumulator = 0;
   let frameId = 0;
+
+  // Track previous XZ to detect crossings (segment intersection between
+  // prev → curr and each crossing line). Initialise from spawn so the
+  // first physics step doesn't false-trigger on a giant jump from origin.
+  let prevX = vehicle.spawn.x;
+  let prevZ = vehicle.spawn.z;
 
   function frame(now) {
     frameId = requestAnimationFrame(frame);
@@ -55,17 +63,37 @@ export function startLoop({ scene, camera, renderer, world, vehicle, mesh }) {
     // every sub-step within that frame so behaviour stays deterministic
     // regardless of how many physics steps happen between renders.
     const input = readInput();
-    if (input.reset) resetVehicle(vehicle);
+    if (input.reset) {
+      resetVehicle(vehicle);
+      resetTiming(timing);
+      prevX = vehicle.spawn.x;
+      prevZ = vehicle.spawn.z;
+    }
 
     // --- physics: fixed-timestep accumulator ---
     accumulator += frameDt;
     let physicsSteps = 0;
     while (accumulator >= FIXED_DT) {
       stepVehicle(world, vehicle, input, FIXED_DT);
+
+      // Crossing detection runs at the same rate as physics so we never
+      // miss a thin sector line between frames at high speed.
+      const ct = vehicle.body.translation();
+      const events = detectCrossings(track, prevX, prevZ, ct.x, ct.z);
+      if (events.length) {
+        updateTiming(timing, events, performance.now());
+      }
+      prevX = ct.x;
+      prevZ = ct.z;
+
       accumulator -= FIXED_DT;
       // Safety: don't spiral the simulation if a long pause happened.
       if (++physicsSteps >= 5) { accumulator = 0; break; }
     }
+
+    // Wall-clock readouts (current lap/sector ms) tick every render frame
+    // even when no crossings happen.
+    updateTiming(timing, [], performance.now());
 
     // --- render: interpolate visual mesh between physics snapshots ---
     const alpha = accumulator / FIXED_DT;
@@ -74,7 +102,7 @@ export function startLoop({ scene, camera, renderer, world, vehicle, mesh }) {
     // --- chase camera ---
     updateChaseCamera(camera, vehicle, mesh, frameDt);
 
-    updateHud(vehicle, input, frameDt);
+    updateHud(vehicle, input, timing, frameDt);
     renderer.render(scene, camera);
   }
 

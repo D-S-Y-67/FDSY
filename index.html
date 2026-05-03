@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PolePosition — Phase 1</title>
+  <title>PolePosition — Monaco</title>
   <link rel="stylesheet" href="./css/style.css">
 
   <!--
@@ -42,8 +42,24 @@
       <span class="steer">steer: <span id="steer-val">0.00</span></span>
     </div>
     <div id="hud-help">
-      WASD / Arrows · R reset · Phase 1 prototype
+      WASD / Arrows · R reset · Phase 2 — Monaco
     </div>
+  </div>
+
+  <!-- Top-right: lap timing readouts -->
+  <div id="hud-timing">
+    <div id="lap-timer">0:00.000</div>
+    <div id="sectors">
+      <div class="sector" id="sector-1"><span class="label">S1</span> <span class="time">—</span></div>
+      <div class="sector" id="sector-2"><span class="label">S2</span> <span class="time">—</span></div>
+      <div class="sector" id="sector-3"><span class="label">S3</span> <span class="time">—</span></div>
+    </div>
+    <div id="lap-summary">
+      <div><span class="label">Last</span> <span id="last-lap">—:—.—</span></div>
+      <div><span class="label">Best</span> <span id="best-lap">—:—.—</span></div>
+      <div><span class="label">Lap</span>  <span id="lap-count">0</span></div>
+    </div>
+    <div id="race-event">&nbsp;</div>
   </div>
 
   <div id="loading">
