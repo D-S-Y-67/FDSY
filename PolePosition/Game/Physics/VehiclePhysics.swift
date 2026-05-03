@@ -69,10 +69,11 @@ final class VehiclePhysics {
         //    than the box but totally fine for an arcade racer. We could
         //    use a hand-tuned compound shape later if needed, but the
         //    hull is fine for Phase 1.
-        let shape = SCNPhysicsShape(node: chassisNode, options: [
-            SCNPhysicsShape.Option.type: SCNPhysicsShape.ShapeType.convexHull,
-            SCNPhysicsShape.Option.keepAsCompound: false
-        ])
+        let shapeOptions: [SCNPhysicsShape.Option: Any] = [
+            .type: SCNPhysicsShape.ShapeType.convexHull,
+            .keepAsCompound: NSNumber(value: false)
+        ]
+        let shape = SCNPhysicsShape(node: chassisNode, options: shapeOptions)
         let body = SCNPhysicsBody(type: .dynamic, shape: shape)
         body.mass = tuning.mass
         // Lower the centre of mass so the car doesn't roll like a truck.
@@ -120,8 +121,8 @@ final class VehiclePhysics {
 
     /// Add this vehicle's behaviour to the scene's physics world. Call once
     /// after the scene is built.
-    func attach(to physicsWorld: SCNPhysicsWorld) {
-        physicsWorld.addBehavior(vehicle)
+    func attach(to world: SCNPhysicsWorld) {
+        world.addBehavior(vehicle)
     }
 
     /// Per-frame update. Call from the renderer delegate.
