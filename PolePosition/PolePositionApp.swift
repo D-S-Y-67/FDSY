@@ -8,8 +8,8 @@ struct PolePositionApp: App {
         WindowGroup {
             RootView()
                 .environment(appState)
-                .frame(minWidth: 960, minHeight: 600,
-                       idealWidth: 1280, idealHeight: 800)
+                .frame(minWidth: 960, idealWidth: 1280,
+                       minHeight: 600, idealHeight: 800)
         }
         #if os(macOS)
         .windowResizability(.contentMinSize)
