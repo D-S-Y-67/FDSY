@@ -19,6 +19,16 @@
 		3300000000000000000000B1 /* CarGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000B1 /* CarGeometry.swift */; };
 		3300000000000000000000B2 /* F1Car.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000B2 /* F1Car.swift */; };
 		3300000000000000000000B3 /* SceneContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000B3 /* SceneContainerView.swift */; };
+		3300000000000000000000B4 /* Track.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000B6 /* Track.swift */; };
+		3300000000000000000000B5 /* TrackPiece.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000B7 /* TrackPiece.swift */; };
+		3300000000000000000000B6 /* Decoration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000B8 /* Decoration.swift */; };
+		3300000000000000000000B7 /* Checkpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000B9 /* Checkpoint.swift */; };
+		3300000000000000000000B8 /* TrackBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000C1 /* TrackBuilder.swift */; };
+		3300000000000000000000B9 /* TrackLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000C2 /* TrackLoader.swift */; };
+		3300000000000000000000C1 /* Timing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000C3 /* Timing.swift */; };
+		3300000000000000000000C2 /* HUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000C4 /* HUDView.swift */; };
+		3300000000000000000000C3 /* Monaco.json in Resources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000C5 /* Monaco.json */; };
+		3300000000000000000000C4 /* TestOval.json in Resources */ = {isa = PBXBuildFile; fileRef = 2200000000000000000000C6 /* TestOval.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +46,16 @@
 		2200000000000000000000B3 /* SceneContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneContainerView.swift; sourceTree = "<group>"; };
 		2200000000000000000000B4 /* PolePosition.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PolePosition.entitlements; sourceTree = "<group>"; };
 		2200000000000000000000B5 /* PolePosition.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PolePosition.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2200000000000000000000B6 /* Track.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Track.swift; sourceTree = "<group>"; };
+		2200000000000000000000B7 /* TrackPiece.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackPiece.swift; sourceTree = "<group>"; };
+		2200000000000000000000B8 /* Decoration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Decoration.swift; sourceTree = "<group>"; };
+		2200000000000000000000B9 /* Checkpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Checkpoint.swift; sourceTree = "<group>"; };
+		2200000000000000000000C1 /* TrackBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackBuilder.swift; sourceTree = "<group>"; };
+		2200000000000000000000C2 /* TrackLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackLoader.swift; sourceTree = "<group>"; };
+		2200000000000000000000C3 /* Timing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Timing.swift; sourceTree = "<group>"; };
+		2200000000000000000000C4 /* HUDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDView.swift; sourceTree = "<group>"; };
+		2200000000000000000000C5 /* Monaco.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Monaco.json; sourceTree = "<group>"; };
+		2200000000000000000000C6 /* TestOval.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = TestOval.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,9 +93,42 @@
 				1100000000000000000000A5 /* Game */,
 				1100000000000000000000A9 /* Vehicle */,
 				1100000000000000000000B1 /* UI */,
+				1100000000000000000000B3 /* Track */,
+				1100000000000000000000B4 /* Systems */,
+				1100000000000000000000B5 /* Circuits */,
 				1100000000000000000000B2 /* Resources */,
 			);
 			path = PolePosition;
+			sourceTree = "<group>";
+		};
+		1100000000000000000000B3 /* Track */ = {
+			isa = PBXGroup;
+			children = (
+				2200000000000000000000B6 /* Track.swift */,
+				2200000000000000000000B7 /* TrackPiece.swift */,
+				2200000000000000000000B8 /* Decoration.swift */,
+				2200000000000000000000B9 /* Checkpoint.swift */,
+				2200000000000000000000C1 /* TrackBuilder.swift */,
+				2200000000000000000000C2 /* TrackLoader.swift */,
+			);
+			path = Track;
+			sourceTree = "<group>";
+		};
+		1100000000000000000000B4 /* Systems */ = {
+			isa = PBXGroup;
+			children = (
+				2200000000000000000000C3 /* Timing.swift */,
+			);
+			path = Systems;
+			sourceTree = "<group>";
+		};
+		1100000000000000000000B5 /* Circuits */ = {
+			isa = PBXGroup;
+			children = (
+				2200000000000000000000C5 /* Monaco.json */,
+				2200000000000000000000C6 /* TestOval.json */,
+			);
+			path = Circuits;
 			sourceTree = "<group>";
 		};
 		1100000000000000000000A4 /* App */ = {
@@ -137,6 +190,7 @@
 			isa = PBXGroup;
 			children = (
 				2200000000000000000000B3 /* SceneContainerView.swift */,
+				2200000000000000000000C4 /* HUDView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -207,6 +261,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3300000000000000000000C3 /* Monaco.json in Resources */,
+				3300000000000000000000C4 /* TestOval.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -229,6 +285,14 @@
 				3300000000000000000000B1 /* CarGeometry.swift in Sources */,
 				3300000000000000000000B2 /* F1Car.swift in Sources */,
 				3300000000000000000000B3 /* SceneContainerView.swift in Sources */,
+				3300000000000000000000B4 /* Track.swift in Sources */,
+				3300000000000000000000B5 /* TrackPiece.swift in Sources */,
+				3300000000000000000000B6 /* Decoration.swift in Sources */,
+				3300000000000000000000B7 /* Checkpoint.swift in Sources */,
+				3300000000000000000000B8 /* TrackBuilder.swift in Sources */,
+				3300000000000000000000B9 /* TrackLoader.swift in Sources */,
+				3300000000000000000000C1 /* Timing.swift in Sources */,
+				3300000000000000000000C2 /* HUDView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

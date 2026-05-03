@@ -7,40 +7,94 @@ import AppKit
 import UIKit
 #endif
 
-/// Builds the initial Phase 1 scene: lighting, ground plane, car. Phase 2
-/// will swap the bare plane for a proper track via `TrackBuilder`.
+/// Builds the Phase 2 scene from a `Track`: lighting, large slate ground,
+/// the track itself (via `TrackBuilder`), the car (via `F1Car`), and the
+/// chase camera. Returns the live objects the game loop needs to drive
+/// each frame.
 enum SceneBuilder {
 
-    /// Result bundle so the caller can wire up the game loop.
     struct Scene {
         let scene: SCNScene
         let cameraRig: CameraRig
         let vehicle: VehiclePhysics
+        let triggers: [Checkpoint]    // for the timing system
     }
 
-    static func build(tuning: PhysicsTuning = .default) -> Scene {
+    static func build(track: Track,
+                      tuning: PhysicsTuning = .default) -> Scene {
         let scene = SCNScene()
 
-        // Sky / background. Soft pale blue, intentionally low contrast so
-        // the orange car pops.
-        scene.background.contents = PlatformColor(red: 0.78, green: 0.85, blue: 0.92, alpha: 1)
-
-        // Match physics gravity to real-world. SCNScene default is -9.8
-        // already, but setting it explicitly is documentation.
+        // Sky background colour driven by the track's `skybox` enum.
+        scene.background.contents = backgroundColor(for: track.skybox)
         scene.physicsWorld.gravity = vec3(0, -9.8, 0)
-        // Sub-step a bit more aggressively than the default for stable
-        // wheels at higher speeds.
         scene.physicsWorld.timeStep = 1.0 / 120.0
 
         // --- Lighting -------------------------------------------------
-        // Ambient — fills shadows so the dark side of the car isn't black.
+        addLighting(to: scene, skybox: track.skybox)
+
+        // --- Ground ---------------------------------------------------
+        // The "outside the track" surface — a big flat slab the same
+        // colour as the track's own ground colour. The track itself sits
+        // a hair above this so its tarmac z-fights nothing.
+        let floor = SCNBox(width: 1200, height: 0.2, length: 1200, chamferRadius: 0)
+        floor.firstMaterial = CarGeometry.flatMaterial(track.groundColor.platformColor())
+        let floorN = SCNNode(geometry: floor)
+        floorN.position = vec3(0, -0.11, 0)
+        floorN.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
+        floorN.physicsBody?.friction = 0.6
+        scene.rootNode.addChildNode(floorN)
+
+        // --- Track ----------------------------------------------------
+        let built = TrackBuilder.build(track)
+        scene.rootNode.addChildNode(built.root)
+
+        // --- Car at the track's spawn transform ----------------------
+        let spawnPos = SCNVector3(built.spawn.m41, built.spawn.m42, built.spawn.m43)
+        let (chassis, wheels) = F1Car.build(at: spawnPos, tuning: tuning)
+        // Apply the spawn rotation too. We have a full 4x4; use it as the
+        // chassis transform.
+        chassis.transform = built.spawn
+        scene.rootNode.addChildNode(chassis)
+        let vehicle = VehiclePhysics(chassisNode: chassis,
+                                     wheelNodes: wheels,
+                                     tuning: tuning)
+        vehicle.attach(to: scene.physicsWorld)
+
+        // --- Camera ---------------------------------------------------
+        let cameraRig = CameraRig(target: chassis)
+        scene.rootNode.addChildNode(cameraRig.node)
+
+        // --- Triggers (snapshot world AABBs after the scene is laid
+        // out) ---------------------------------------------------------
+        let checkpoints: [Checkpoint] = built.triggers.map { info in
+            Checkpoint(kind: info.kind,
+                       aabb: CheckpointBuilder.aabb(for: info.node))
+        }
+
+        return Scene(scene: scene, cameraRig: cameraRig,
+                     vehicle: vehicle, triggers: checkpoints)
+    }
+
+    // MARK: - Lighting / sky helpers
+
+    private static func backgroundColor(for sky: Skybox) -> PlatformColor {
+        switch sky {
+        case .day:    return PlatformColor(red: 0.60, green: 0.74, blue: 0.85, alpha: 1)
+        case .dusk:   return PlatformColor(red: 0.85, green: 0.46, blue: 0.32, alpha: 1)
+        case .night:  return PlatformColor(red: 0.04, green: 0.06, blue: 0.10, alpha: 1)
+        case .desert: return PlatformColor(red: 0.92, green: 0.78, blue: 0.55, alpha: 1)
+        }
+    }
+
+    private static func addLighting(to scene: SCNScene, skybox: Skybox) {
+        // Ambient — fills the dark side of the car so it isn't black.
         let ambient = SCNNode()
         ambient.light = SCNLight()
         ambient.light?.type = .ambient
         ambient.light?.color = PlatformColor(white: 0.55, alpha: 1)
         scene.rootNode.addChildNode(ambient)
 
-        // Directional — the "sun". Casts soft shadows.
+        // Directional sun. Cool rim from the +X side, slightly behind.
         let sun = SCNNode()
         sun.light = SCNLight()
         sun.light?.type = .directional
@@ -50,55 +104,8 @@ enum SceneBuilder {
         sun.light?.shadowSampleCount = 8
         sun.light?.shadowRadius = 4
         sun.light?.shadowColor = PlatformColor(white: 0, alpha: 0.45)
-        // Pointed roughly south-west and down; eulerAngles X = -1.0 rad
-        // (≈ -57°) gives the long raking shadows we want.
         sun.eulerAngles = vec3(-1.0, -0.6, 0)
-        sun.position = vec3(0, 50, 0)
+        sun.position = vec3(0, 200, 0)
         scene.rootNode.addChildNode(sun)
-
-        // --- Ground plane --------------------------------------------
-        // A big flat box. Earlier revisions used SCNFloor, but its
-        // reflection ("FloorPass") doesn't link into the render graph in
-        // this setup and spams `Pass FloorPass is not linked …` every
-        // frame. A plain box has no such pipeline, looks identical for our
-        // purposes, and gives the physics a clean static shape.
-        let floorGeo = SCNBox(width: 400, height: 0.2, length: 400, chamferRadius: 0)
-        floorGeo.firstMaterial = CarGeometry.flatMaterial(
-            PlatformColor(red: 0.30, green: 0.32, blue: 0.34, alpha: 1)
-        )
-        let floor = SCNNode(geometry: floorGeo)
-        floor.position = vec3(0, -0.1, 0) // top surface at y = 0
-        floor.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
-        floor.physicsBody?.friction = 1.0
-        scene.rootNode.addChildNode(floor)
-
-        // Reference grid markers — small posts every 25 m so you can tell
-        // you're moving while driving in a featureless plane. Removed in
-        // Phase 2 once a real track is in.
-        for x in stride(from: -100.0, through: 100.0, by: 25.0) {
-            for z in stride(from: -100.0, through: 100.0, by: 25.0) where !(x == 0 && z == 0) {
-                let post = CarGeometry.box(
-                    width: 0.4, height: 1.2, length: 0.4, chamfer: 0,
-                    color: PlatformColor(white: 0.85, alpha: 1)
-                )
-                post.position = vec3(x, 0.6, z)
-                scene.rootNode.addChildNode(post)
-            }
-        }
-
-        // --- Car ------------------------------------------------------
-        // Spawn well above the ground so the suspension visibly settles
-        // and we can be sure the wheels are making contact (rather than
-        // floating in mid-air or clipping through).
-        let (chassis, wheels) = F1Car.build(at: vec3(0, 1.5, 0), tuning: tuning)
-        scene.rootNode.addChildNode(chassis)
-        let vehicle = VehiclePhysics(chassisNode: chassis, wheelNodes: wheels, tuning: tuning)
-        vehicle.attach(to: scene.physicsWorld)
-
-        // --- Camera ---------------------------------------------------
-        let cameraRig = CameraRig(target: chassis)
-        scene.rootNode.addChildNode(cameraRig.node)
-
-        return Scene(scene: scene, cameraRig: cameraRig, vehicle: vehicle)
     }
 }

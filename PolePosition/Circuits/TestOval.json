@@ -1,0 +1,22 @@
+{
+  "name": "Test Oval",
+  "pieces": [
+    { "straight": { "length": 80, "width": 14, "rise": 0, "inTunnel": false } },
+    { "curve":    { "angle": 3.14159, "radius": 32, "width": 14, "rise": 0, "inTunnel": false } },
+    { "straight": { "length": 80, "width": 14, "rise": 0, "inTunnel": false } },
+    { "curve":    { "angle": 3.14159, "radius": 32, "width": 14, "rise": 0, "inTunnel": false } }
+  ],
+  "markers": [
+    { "kind": "startFinish", "pieceIndex": 0 },
+    { "kind": "sector2",     "pieceIndex": 1 },
+    { "kind": "sector3",     "pieceIndex": 2 }
+  ],
+  "spawn": { "pieceIndex": 0, "offsetAlong": 6, "rideHeight": 1.5 },
+  "decorations": [
+    { "treeCluster": { "at": { "x": 0,  "y": 0, "z":  -45 }, "count": 6, "radius": 6, "color": [0.18, 0.45, 0.22] } },
+    { "treeCluster": { "at": { "x": 64, "y": 0, "z":  -40 }, "count": 6, "radius": 6, "color": [0.18, 0.45, 0.22] } },
+    { "grandstand":  { "at": { "x": -22, "y": 0, "z": -8 }, "size": { "x": 22, "y": 6, "z": 4 }, "rotation": 1.5708, "color": [0.55, 0.55, 0.58] } }
+  ],
+  "skybox": "day",
+  "groundColor": [0.62, 0.60, 0.55]
+}

@@ -1,82 +1,83 @@
 import Foundation
 import SceneKit
+import simd
 
 /// Per-frame driver. SCNView calls `renderer(_:updateAtTime:)` once per
 /// rendered frame on a non-main thread; we use that as our game loop.
 ///
-/// Responsibilities:
-///   1. Compute frame `dt` from monotonic times.
-///   2. Read input, apply to the vehicle, update the camera.
-///   3. Push a fresh `Telemetry` snapshot to `AppState` on the main actor.
+/// Phase 2 additions over Phase 1: the loop also updates the `Timing`
+/// state machine each frame and pushes a combined `GameSnapshot`
+/// (telemetry + lap timing) to `AppState` at 10 Hz.
 final class GameLoopController: NSObject, SCNSceneRendererDelegate {
     private let input: InputManager
     private let vehicle: VehiclePhysics
     private let cameraRig: CameraRig
+    private let timing: Timing
+    private let triggers: [Checkpoint]
     private weak var appState: AppState?
 
     private var lastTime: TimeInterval = 0
-    private var lastTelemetryPush: TimeInterval = 0
-    private var lastDebugLog: TimeInterval = 0
+    private var lastSnapshotPush: TimeInterval = 0
 
     /// HUD doesn't need 60 Hz; 10 Hz is plenty and keeps us from spamming
     /// MainActor-hop tasks every frame.
-    private let telemetryPushInterval: TimeInterval = 0.1
+    private let snapshotPushInterval: TimeInterval = 0.1
 
     init(input: InputManager,
          vehicle: VehiclePhysics,
          cameraRig: CameraRig,
+         timing: Timing,
+         triggers: [Checkpoint],
          appState: AppState) {
         self.input = input
         self.vehicle = vehicle
         self.cameraRig = cameraRig
+        self.timing = timing
+        self.triggers = triggers
         self.appState = appState
     }
 
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
-        // First frame: just record the timestamp and bail.
         if lastTime == 0 {
             lastTime = time
-            lastTelemetryPush = time
+            lastSnapshotPush = time
             return
         }
-        let dt = min(max(time - lastTime, 0.0), 1.0 / 20.0) // clamp to avoid
-        // huge jumps when the app is paused. 50 ms = 20 fps floor.
+        // Clamp to avoid huge jumps when the app is paused/backgrounded.
+        let dt = min(max(time - lastTime, 0.0), 1.0 / 20.0)
         lastTime = time
 
-        // Restart request — handled before the physics step so the car's
-        // new transform is what the simulation sees this frame.
+        // Restart request — handled before physics so the simulation
+        // sees the new transform on this frame.
         if input.consumeRestart() {
             vehicle.respawn()
             cameraRig.snapToTarget()
+            timing.reset(at: time)
         }
 
         let axes = input.axes
         vehicle.update(axes: axes, dt: dt)
         cameraRig.update(dt: dt)
 
-        #if DEBUG
-        if time - lastDebugLog >= 1.0 {
-            lastDebugLog = time
-            let pos = vehicle.worldPosition
-            print(String(format: "[loop] dt=%.4f throttle=%.2f brake=%.2f speed=%.1f kph pos=(%.2f, %.2f, %.2f)",
-                         dt, axes.throttle, axes.brake, vehicle.speedKPH,
-                         Double(pos.x), Double(pos.y), Double(pos.z)))
-        }
-        #endif
+        // --- Timing: per-frame check against trigger AABBs.
+        let pos = vehicle.worldPosition
+        let posSimd = simd_float3(Float(pos.x), Float(pos.y), Float(pos.z))
+        timing.update(carPosition: posSimd, time: time, triggers: triggers)
 
-        // Throttled telemetry push. Reading speedKPH and assembling the
-        // struct is cheap, but spawning 60 MainActor tasks per second adds
-        // up — 10 Hz is plenty for the HUD.
-        if time - lastTelemetryPush >= telemetryPushInterval, let appState {
-            lastTelemetryPush = time
-            let telem = Telemetry(
-                speedKPH: vehicle.speedKPH,
-                throttle: axes.throttle,
-                brake: axes.brake,
-                steering: axes.steer
+        // --- Throttled snapshot push to SwiftUI on the main actor.
+        if time - lastSnapshotPush >= snapshotPushInterval, let appState {
+            lastSnapshotPush = time
+            let snap = GameSnapshot(
+                telemetry: Telemetry(
+                    speedKPH: vehicle.speedKPH,
+                    throttle: axes.throttle,
+                    brake: axes.brake,
+                    steering: axes.steer
+                ),
+                timing: timing.snapshot
             )
             Task { @MainActor in
-                appState.telemetry = telem
+                appState.snapshot = snap
             }
         }
     }

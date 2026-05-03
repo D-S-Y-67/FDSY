@@ -7,12 +7,13 @@ import AppKit
 import UIKit
 #endif
 
-/// SwiftUI bridge to `SCNView`. Owns the `InputManager` and the
-/// `GameLoopController` (held via Coordinator), builds the scene once.
+/// SwiftUI bridge to `SCNView`. Owns the `InputManager`, the `Timing`
+/// state machine, and the `GameLoopController` (held via Coordinator).
+/// Builds the scene from the currently-selected track.
 ///
-/// Phase 1 input wiring:
+/// Phase 2 input wiring:
 ///   - macOS: subclass SCNView, override keyDown/keyUp.
-///   - iOS  : stub. Touch + MFi controllers come in a later phase.
+///   - iOS  : stub, no input wired yet (touch + MFi land in a later phase).
 
 #if os(macOS)
 struct SceneContainerView: NSViewRepresentable {
@@ -26,7 +27,9 @@ struct SceneContainerView: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeNSView(context: Context) -> KeyboardSCNView {
-        let built = SceneBuilder.build()
+        let track = TrackLoader.loadOrFallback(appState.trackChoice)
+        let built = SceneBuilder.build(track: track)
+        let timing = Timing()
 
         let view = KeyboardSCNView(frame: .zero)
         view.scene = built.scene
@@ -41,6 +44,8 @@ struct SceneContainerView: NSViewRepresentable {
             input: context.coordinator.input,
             vehicle: built.vehicle,
             cameraRig: built.cameraRig,
+            timing: timing,
+            triggers: built.triggers,
             appState: appState
         )
         context.coordinator.loop = loop
@@ -63,8 +68,6 @@ final class KeyboardSCNView: SCNView {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        // Defer to next runloop tick so the window's first-responder state
-        // is settled before we ask for it.
         DispatchQueue.main.async { [weak self] in
             guard let self, let window = self.window else { return }
             window.makeFirstResponder(self)
@@ -83,9 +86,6 @@ final class KeyboardSCNView: SCNView {
         NotificationCenter.default.removeObserver(self)
     }
 
-    /// Reclaim first responder on click. SwiftUI sometimes hands focus back
-    /// to its own root view after layout — clicking inside the scene gets
-    /// us back in the responder chain.
     override func mouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
         super.mouseDown(with: event)
@@ -94,9 +94,6 @@ final class KeyboardSCNView: SCNView {
     override func keyDown(with event: NSEvent) {
         if event.isARepeat { return }
         if let key = InputManager.keyForMacKeyCode(event.keyCode) {
-            #if DEBUG
-            print("[KeyboardSCNView] keyDown \(event.keyCode) → \(key)")
-            #endif
             input?.keyDown(key)
             return
         }
@@ -112,12 +109,11 @@ final class KeyboardSCNView: SCNView {
     }
 
     @objc private func windowResignedKey() {
-        // User alt-tabbed away — don't keep "driving" until they return.
         input?.clear()
     }
 }
 
-#else // iOS / iPadOS — Phase 1 stub: render the scene, no input yet.
+#else // iOS / iPadOS — Phase 2 stub: render the scene, no input yet.
 struct SceneContainerView: UIViewRepresentable {
     @Environment(AppState.self) private var appState
 
@@ -129,7 +125,9 @@ struct SceneContainerView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeUIView(context: Context) -> SCNView {
-        let built = SceneBuilder.build()
+        let track = TrackLoader.loadOrFallback(appState.trackChoice)
+        let built = SceneBuilder.build(track: track)
+        let timing = Timing()
 
         let view = SCNView(frame: .zero)
         view.scene = built.scene
@@ -143,6 +141,8 @@ struct SceneContainerView: UIViewRepresentable {
             input: context.coordinator.input,
             vehicle: built.vehicle,
             cameraRig: built.cameraRig,
+            timing: timing,
+            triggers: built.triggers,
             appState: appState
         )
         context.coordinator.loop = loop
