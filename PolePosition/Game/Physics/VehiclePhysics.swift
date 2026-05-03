@@ -105,10 +105,12 @@ final class VehiclePhysics {
             // around for any future per-side tuning.
             _ = isLeft
             w.axle = vec3(1, 0, 0)
-            // Chassis-up. Default in SceneKit is (0, -1, 0) which inverts
-            // the steering direction (D would turn left). +Y matches the
-            // intuitive convention: positive steer = turn right.
-            w.steeringAxis = vec3(0, 1, 0)
+            // Chassis-down. SCNPhysicsVehicleWheel uses this axis for
+            // BOTH the steering rotation AND the suspension travel
+            // direction — so it has to point toward the ground or the
+            // wheel never reaches the floor. Keep it as -Y; we fix the
+            // steering-direction sign in `update(axes:dt:)` instead.
+            w.steeringAxis = vec3(0, -1, 0)
             w.radius = tuning.wheelRadius
             w.frictionSlip = isFront ? tuning.frictionSlipFront : tuning.frictionSlipRear
             w.suspensionStiffness = tuning.suspensionStiffness
@@ -133,8 +135,10 @@ final class VehiclePhysics {
     /// Per-frame update. Call from the renderer delegate.
     func update(axes: InputManager.Axes, dt: TimeInterval) {
         // --- Steering -------------------------------------------------
-        // Target steering angle in radians.
-        let target = CGFloat(axes.steer) * tuning.maxSteerRadians
+        // Target steering angle in radians. Negated because steeringAxis
+        // is -Y (chassis-down), which inverts the rotation direction
+        // relative to the user's intent (positive steer = turn right).
+        let target = -CGFloat(axes.steer) * tuning.maxSteerRadians
         // Frame-rate independent exponential lerp:
         //   value += (target - value) * (1 - exp(-rate * dt))
         // At 60 fps with rate = 12 this resolves ~80 % toward target each

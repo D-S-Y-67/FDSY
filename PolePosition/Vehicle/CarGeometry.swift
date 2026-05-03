@@ -59,13 +59,31 @@ enum CarGeometry {
         return SCNNode(geometry: g)
     }
 
-    /// A wheel: cylinder lying on its side along the X axis (so it spins
-    /// about X when the physics drives it).
+    /// A wheel: a cylinder lying on its side along the X axis (its long
+    /// axis is the spin axle). Wrapped in a parent node so that
+    /// SCNPhysicsVehicleWheel — which overwrites the *wheel node's*
+    /// transform every frame — doesn't undo our 90° rotation. The parent
+    /// is what gets handed to the physics; the cylinder is its child and
+    /// keeps its orientation relative to the parent.
     static func wheel(radius: CGFloat, halfWidth: CGFloat,
                       color: PlatformColor = .black) -> SCNNode {
-        let n = cylinder(radius: radius, height: halfWidth * 2, color: color)
-        // Rotate so the cylinder's long axis aligns with chassis-local X.
-        n.eulerAngles = vec3(0, 0, .pi / 2)
-        return n
+        let parent = SCNNode()
+        let inner = cylinder(radius: radius, height: halfWidth * 2, color: color)
+        // Rotate so the cylinder's long axis aligns with the parent's
+        // local X (the axle direction). +π/2 around Z maps local Y → -X.
+        inner.eulerAngles = vec3(0, 0, .pi / 2)
+        parent.addChildNode(inner)
+
+        // A small contrasting marker on the rim so spin is visible. The
+        // marker is positioned at the top of the wheel; as the wheel
+        // rotates around its X axis the marker sweeps round, which gives
+        // the eye something to track.
+        let marker = box(width: halfWidth * 1.2, height: 0.04,
+                         length: radius * 0.45, chamfer: 0,
+                         color: PlatformColor(white: 0.85, alpha: 1))
+        marker.position = vec3(0, Double(radius) - 0.01, 0)
+        parent.addChildNode(marker)
+
+        return parent
     }
 }
