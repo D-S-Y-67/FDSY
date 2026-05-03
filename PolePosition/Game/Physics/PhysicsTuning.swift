@@ -25,7 +25,12 @@ struct PhysicsTuning {
 
     // Powertrain
     var maxEngineForce: CGFloat = 4000
-    var maxBrakeForce: CGFloat  = 60
+    var maxBrakeForce: CGFloat  = 500
+    /// When the brake key is held below this speed (km/h, absolute) the
+    /// car drives in reverse instead of braking.
+    var reverseSpeedThresholdKPH: Double = 5
+    /// Reverse acceleration as a fraction of forward `maxEngineForce`.
+    var reverseForceFraction: CGFloat = 0.5
 
     // Steering
     var maxSteerRadians: CGFloat = 0.55       // ≈ 31°

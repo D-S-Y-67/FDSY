@@ -105,7 +105,10 @@ final class VehiclePhysics {
             // around for any future per-side tuning.
             _ = isLeft
             w.axle = vec3(1, 0, 0)
-            w.steeringAxis = vec3(0, -1, 0) // chassis-down, as default
+            // Chassis-up. Default in SceneKit is (0, -1, 0) which inverts
+            // the steering direction (D would turn left). +Y matches the
+            // intuitive convention: positive steer = turn right.
+            w.steeringAxis = vec3(0, 1, 0)
             w.radius = tuning.wheelRadius
             w.frictionSlip = isFront ? tuning.frictionSlipFront : tuning.frictionSlipRear
             w.suspensionStiffness = tuning.suspensionStiffness
@@ -143,21 +146,30 @@ final class VehiclePhysics {
         vehicle.setSteeringAngle(currentSteer, forWheelAt: 0)
         vehicle.setSteeringAngle(currentSteer, forWheelAt: 1)
 
-        // --- Engine ---------------------------------------------------
-        // RWD: drive only the rear wheels (2 = RL, 3 = RR). This gives the
-        // characteristic F1-feeling "rear gets loose under power" without
-        // us simulating tyres yet.
-        //
-        // We don't apply engine force while the brake is held — saves the
-        // user from accidentally "throttle-locking" against the brakes.
-        let engineForce = axes.brake > 0 ? 0 : CGFloat(axes.throttle) * tuning.maxEngineForce
+        // --- Engine + brake -------------------------------------------
+        // RWD: drive only the rear wheels (2 = RL, 3 = RR). The brake key
+        // (S) does double duty: above the reverse threshold it applies
+        // brake torque, below it it applies a backward engine force so
+        // the car backs up. This is the standard arcade-racer behaviour.
+        let speedKPH = vehicle.speedInKilometersPerHour
+        let throttle = CGFloat(axes.throttle)
+        let brakeIn  = CGFloat(axes.brake)
+
+        var engineForce: CGFloat = throttle * tuning.maxEngineForce
+        if throttle == 0 && brakeIn > 0 && abs(Double(speedKPH)) <= tuning.reverseSpeedThresholdKPH {
+            // Reverse — half the forward force is plenty for arcade backing-up.
+            engineForce = -brakeIn * tuning.maxEngineForce * tuning.reverseForceFraction
+        }
         vehicle.applyEngineForce(engineForce, forWheelAt: 2)
         vehicle.applyEngineForce(engineForce, forWheelAt: 3)
 
-        // --- Brakes ---------------------------------------------------
-        // Brake on all four. An F1 car has way more front than rear bias,
-        // but evenly applied is fine for arcade.
-        let brakeTorque = CGFloat(axes.brake) * tuning.maxBrakeForce
+        // Brake torque on all four wheels — only when actually braking
+        // (not while we're using the brake key as reverse), and only when
+        // moving fast enough that "brake" is meaningful.
+        let isReversing = throttle == 0 && brakeIn > 0 &&
+            abs(Double(speedKPH)) <= tuning.reverseSpeedThresholdKPH
+        let brakeTorque: CGFloat = (brakeIn > 0 && !isReversing) ?
+            brakeIn * tuning.maxBrakeForce : 0
         for i in 0..<4 {
             vehicle.applyBrakingForce(brakeTorque, forWheelAt: i)
         }
