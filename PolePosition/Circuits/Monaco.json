@@ -61,16 +61,15 @@
     { "building":   { "at": { "x":  70, "y": 0, "z": -100 },  "size": { "x": 10, "y": 16, "z":  8 },  "rotation": 0.4,  "color": [0.78, 0.74, 0.66], "style": "tower" } },
     { "building":   { "at": { "x":  85, "y": 0, "z":  -80 },  "size": { "x": 12, "y": 20, "z": 10 },  "rotation": 0.4,  "color": [0.83, 0.79, 0.71], "style": "tower" } },
 
-    { "water":      { "at": { "x": 120, "y": 0.05, "z": -10 }, "size": { "x": 240, "z": 280 }, "rotation": 0,    "color": [0.10, 0.32, 0.48] } },
+    { "water":      { "at": { "x": -120, "y": 0.05, "z":  60 }, "size": { "x": 200, "z": 220 }, "rotation": 0, "color": [0.10, 0.32, 0.48] } },
+    { "water":      { "at": { "x":   80, "y": 0.05, "z":  80 }, "size": { "x": 160, "z":  60 }, "rotation": 0, "color": [0.10, 0.32, 0.48] } },
 
-    { "yacht":      { "at": { "x":  60, "y": 0,    "z": -40 }, "length": 22, "rotation":  0.3, "color": [0.96, 0.96, 0.94] } },
-    { "yacht":      { "at": { "x":  90, "y": 0,    "z": -10 }, "length": 28, "rotation":  0.5, "color": [0.95, 0.95, 0.93] } },
-    { "yacht":      { "at": { "x": 130, "y": 0,    "z": -50 }, "length": 32, "rotation":  0.0, "color": [0.94, 0.94, 0.92] } },
-    { "yacht":      { "at": { "x": 170, "y": 0,    "z": -25 }, "length": 38, "rotation":  0.4, "color": [0.96, 0.96, 0.94] } },
-    { "yacht":      { "at": { "x":  80, "y": 0,    "z":  20 }, "length": 18, "rotation": -0.2, "color": [0.92, 0.92, 0.90] } },
-    { "yacht":      { "at": { "x": 120, "y": 0,    "z":  30 }, "length": 24, "rotation":  0.1, "color": [0.96, 0.96, 0.94] } },
-    { "yacht":      { "at": { "x":  50, "y": 0,    "z":  60 }, "length": 16, "rotation": -0.3, "color": [0.94, 0.94, 0.92] } },
-    { "yacht":      { "at": { "x": 100, "y": 0,    "z":  70 }, "length": 26, "rotation":  0.0, "color": [0.96, 0.96, 0.94] } },
+    { "yacht":      { "at": { "x": -60, "y": 0, "z":   40 }, "length": 22, "rotation":  0.3, "color": [0.96, 0.96, 0.94] } },
+    { "yacht":      { "at": { "x": -100, "y": 0, "z":   80 }, "length": 28, "rotation":  0.5, "color": [0.95, 0.95, 0.93] } },
+    { "yacht":      { "at": { "x": -150, "y": 0, "z":  120 }, "length": 32, "rotation":  0.0, "color": [0.94, 0.94, 0.92] } },
+    { "yacht":      { "at": { "x": -180, "y": 0, "z":   30 }, "length": 38, "rotation":  0.4, "color": [0.96, 0.96, 0.94] } },
+    { "yacht":      { "at": { "x":  60, "y": 0, "z":   80 }, "length": 18, "rotation": -0.2, "color": [0.92, 0.92, 0.90] } },
+    { "yacht":      { "at": { "x":  120, "y": 0, "z":   90 }, "length": 24, "rotation":  0.1, "color": [0.96, 0.96, 0.94] } },
 
     { "treeCluster":{ "at": { "x": -45, "y": 0, "z": -150 }, "count": 8, "radius": 6, "color": [0.18, 0.45, 0.22] } },
     { "treeCluster":{ "at": { "x": -55, "y": 0, "z": -200 }, "count": 6, "radius": 5, "color": [0.20, 0.48, 0.24] } }

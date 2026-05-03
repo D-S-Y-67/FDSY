@@ -33,12 +33,19 @@ struct PhysicsTuning {
     var reverseForceFraction: CGFloat = 0.5
 
     // Steering
-    var maxSteerRadians: CGFloat = 0.55       // ≈ 31°
-    var steerLerp: CGFloat       = 12.0       // larger = snappier response
+    // Lowered from the Phase 1 default (0.55, 12.0) — the previous values
+    // made the car turn too sharply for keyboard taps. With these values
+    // a quarter-second tap of D moves the steering smoothly toward lock
+    // without snapping. Bump back up if you want twitchier kart-style
+    // handling.
+    var maxSteerRadians: CGFloat = 0.40       // ≈ 23°
+    var steerLerp: CGFloat       = 6.0        // larger = snappier response
 
     // Tyre grip
     var frictionSlipFront: CGFloat = 1.6
-    var frictionSlipRear: CGFloat  = 1.4
+    // Rear nudged from 1.4 → 1.55 so throttle-on oversteer is less
+    // immediate. Drop again if you want the rear loose for arcade drifts.
+    var frictionSlipRear: CGFloat  = 1.55
 
     // Suspension
     var suspensionStiffness: CGFloat   = 5.5

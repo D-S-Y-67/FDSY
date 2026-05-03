@@ -57,11 +57,21 @@ enum TrackPiece: Codable, Equatable {
             // Right turn (positive `angle`) = clockwise viewed from above
             // = NEGATIVE rotation around +Y in right-handed coords.
             //
-            // Geometry: arc center is at +X in the entry frame, distance
-            // = radius. Travelling along the arc by angle θ moves the car
-            // by Δ = (radius·(1 − cos θ), 0, −radius·sin θ).
-            let dx = radius * (1 - cos(angle))   // sideways toward the turn
-            let dz = -radius * sin(angle)         // along forward (-Z)
+            // Arc center sits on the side of the turn:
+            //   right turn → center at (+R, 0, 0)
+            //   left turn  → center at (−R, 0, 0)
+            // We encode this with a SIGNED radius: signedR = R · sign(angle).
+            //
+            // Travelling along the arc by signed angle θ moves the car by
+            //   Δ = (signedR·(1 − cos θ), 0, −signedR·sin θ)
+            //
+            // (Earlier revisions used unsigned `radius` here, which gave
+            // wrong signs for both dx and dz on every left turn — the
+            // entire downstream piece chain would lay out in the wrong
+            // half-plane.)
+            let signedR = angle >= 0 ? radius : -radius
+            let dx = signedR * (1 - cos(angle))
+            let dz = -signedR * sin(angle)
             let translate = mat4Translation(dx, rise, dz)
             let rotate    = mat4Rotation(-angle, 0, 1, 0)
             // Apply rotation first, then translation: M = T · R.
@@ -83,11 +93,13 @@ enum TrackPiece: Codable, Equatable {
             }
 
         case .curve(let angle, let radius, _, let rise, _):
+            // See `entryToExit` for why signedR is needed (left vs right turn).
+            let signedR = angle >= 0 ? radius : -radius
             return (0...n).map { i in
                 let t = Double(i) / Double(n)
                 let a = angle * t
-                let dx = radius * (1 - cos(a))
-                let dz = -radius * sin(a)
+                let dx = signedR * (1 - cos(a))
+                let dz = -signedR * sin(a)
                 return Vec3(dx, rise * t, dz)
             }
         }
@@ -113,21 +125,22 @@ enum TrackPiece: Codable, Equatable {
             return (left, right)
 
         case .curve(let angle, let radius, _, let rise, _):
+            // Same signed-radius fix as in `entryToExit`. Without it,
+            // every left-turn piece lays its tarmac in the wrong half
+            // and the visible track ends at the first left-hander.
+            let signedR = angle >= 0 ? radius : -radius
             var left:  [Vec3] = []
             var right: [Vec3] = []
             for i in 0...n {
                 let t = Double(i) / Double(n)
                 let a = angle * t
-                // Centerline point + side offset rotated by -a.
-                let cx = radius * (1 - cos(a))
+                let cx = signedR * (1 - cos(a))
                 let cy = rise * t
-                let cz = -radius * sin(a)
-                // The "right" of the centerline at angle a is the
-                // direction perpendicular to the tangent, pointing toward
-                // +X side at a=0. Unit right = (cos a, 0, sin a) (verify:
-                // at a=0 this is (1,0,0) = +X; at a=π/2, (0,0,1) = +Z,
-                // correct since after a 90° right turn the driver's right
-                // is now +Z).
+                let cz = -signedR * sin(a)
+                // "Right" perpendicular to the tangent. Unit right vector
+                // = (cos a, 0, sin a) at any `a` regardless of turn
+                // direction (the heading rotates by -a around +Y, and
+                // the right of that heading rotates with it).
                 let rx = cos(a)
                 let rz = sin(a)
                 left.append(Vec3(cx - halfW * rx, cy, cz - halfW * rz))

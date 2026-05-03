@@ -159,6 +159,15 @@ enum TrackBuilder {
                 kerbNodes.append(kerb)
             }
 
+            // Walls on both sides of every piece, with static physics so
+            // the car can't drive off.
+            let leftWall = makeWall(edgeLocal: leftLocal, transform: current,
+                                    color: RGB.hotelWhite.platformColor())
+            let rightWall = makeWall(edgeLocal: rightLocal, transform: current,
+                                     color: RGB.hotelWhite.platformColor())
+            kerbNodes.append(leftWall)
+            kerbNodes.append(rightWall)
+
             // Advance to next piece.
             current = SCNMatrix4Mult(current, piece.entryToExit)
         }
@@ -212,6 +221,48 @@ enum TrackBuilder {
             // the track center by half the kerb width.
             let _ = pieceWidth
             let _ = isInside
+            parent.addChildNode(n)
+        }
+        return parent
+    }
+
+    /// Build a static-body wall along an edge — a chain of thin tall
+    /// boxes, one per segment of the piece. Used to prevent the car
+    /// driving off the track.
+    private static func makeWall(edgeLocal: [Vec3],
+                                 transform: SCNMatrix4,
+                                 color: PlatformColor) -> SCNNode {
+        let parent = SCNNode()
+        parent.name = "wall"
+        let mat = CarGeometry.flatMaterial(color)
+        // A reddish stripe near the top so walls read as "barrier" rather
+        // than "building". Single material here for performance — Phase 4
+        // can swap in a striped texture or a per-segment second material.
+
+        for i in 0..<(edgeLocal.count - 1) {
+            let a = transformPoint(edgeLocal[i], by: transform)
+            let b = transformPoint(edgeLocal[i + 1], by: transform)
+            let midX = (a.x + b.x) * 0.5
+            let midZ = (a.z + b.z) * 0.5
+            let dx = b.x - a.x
+            let dz = b.z - a.z
+            let len = (dx * dx + dz * dz).squareRoot()
+            let yaw = atan2(dx, -dz)
+
+            let box = SCNBox(width: 0.4,
+                             height: 1.5,
+                             length: CGFloat(len + 0.05),
+                             chamferRadius: 0)
+            box.firstMaterial = mat
+            let n = SCNNode(geometry: box)
+            // Wall sits on the tarmac with the box centered vertically
+            // (so half-height of 0.75 puts top at y=1.5 above tarmac).
+            n.position = vec3(midX, 0.75, midZ)
+            n.eulerAngles = vec3(0, yaw, 0)
+            n.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
+            n.physicsBody?.friction = 0.3
+            n.physicsBody?.restitution = 0.1
+            n.castsShadow = true
             parent.addChildNode(n)
         }
         return parent
